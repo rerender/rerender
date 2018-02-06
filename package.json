@@ -1,6 +1,6 @@
 {
   "name": "rerender",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Isomorphic ES6 framework with components, store and virtual dom",
   "main": "lib/index.js",
   "repository": {
