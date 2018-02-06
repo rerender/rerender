@@ -30,7 +30,8 @@ VNode.prototype = {
     },
 
     getDomNode() {
-        return this._node || (this._node = this.context.getDomNode());
+        return this.context.getDomNode();
+        // return this._node || (this._node = this.context.getDomNode());
     }
 };
 
