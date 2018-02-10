@@ -233,7 +233,7 @@ Update.prototype = {
             if (nextAttrs) {
                 for (let name in nextAttrs) {
                     if ((!attrs || nextAttrs[name] !== attrs[name]) && !noRenderAttrs[name]) {
-                        domNode[name] = nextAttrs[name];
+                        setAttr(domNode, name, nextAttrs[name]);
                     }
                 }
             }
@@ -255,20 +255,20 @@ Update.prototype = {
 
         for (let name in nextAttrsDynamic) {
             if (nextAttrsDynamic[name] !== attrsDynamic[name]) {
-                domNode[name] = nextAttrsDynamic[name];
+                setAttr(domNode, name, nextAttrsDynamic[name]);
             }
         }
 
         for (let name in attrsDynamic) {
             if (!nextAttrsDynamic[name]) {
-                domNode[name] = nextAttrs && nextAttrs[name] || null;
+                setAttr(domNode, name, nextAttrs && nextAttrs[name] || null);
             }
         }
 
         if (nextAttrs) {
             for (let name in nextAttrs) {
                 if (nextAttrsDynamic[name] === undefined && (!attrs || nextAttrs[name] !== attrs[name]) && !noRenderAttrs[name]) {
-                    domNode[name] = nextAttrs[name];
+                    setAttr(domNode, name, nextAttrs[name]);
                 }
             }
         }
@@ -298,13 +298,13 @@ UpdateDynamic.prototype = {
         if (prevAttrs) {
             for (let name in attrs) {
                 if (attrs[name] !== prevAttrs[name]) {
-                    domNode[name] = attrs[name];
+                    setAttr(domNode, name, attrs[name]);
                 }
             }
 
             for (let name in prevAttrs) {
                 if (attrs[name] === undefined) {
-                    domNode[name] = this.node.attrs && this.node.attrs[name] || null;
+                    setAttr(domNode, name, this.node.attrs && this.node.attrs[name] || null);
                 }
             }
 
@@ -358,33 +358,7 @@ function createElement(nextNode, document, skipCreation) {
         if (!skipCreation[nextNode.context.id]) {
             nextDomNode = document.createElement(nextNode.tag);
 
-            if (nextNode.dynamic) {
-                for (let name in nextNode.dynamic.attrs) {
-                    nextDomNode[name] = nextNode.dynamic.attrs[name];
-                }
-
-                if (nextNode.attrs) {
-                    for (let name in nextNode.attrs) {
-                        if (!noRenderAttrs[name] && nextNode.dynamic.attrs[name] === undefined) {
-                            nextDomNode[name] = nextNode.attrs[name];
-                        }
-                    }
-
-                    if (typeof nextNode.attrs.ref === 'function') {
-                        nextNode.attrs.ref(nextNode.dynamic);
-                    }
-                }
-            } else if (nextNode.attrs) {
-                for (let name in nextNode.attrs) {
-                    if (!noRenderAttrs[name]) {
-                        nextDomNode[name] = nextNode.attrs[name];
-                    }
-                }
-
-                if (typeof nextNode.attrs.ref === 'function') {
-                    nextNode.attrs.ref(nextNode.dynamic);
-                }
-            }
+            setAttrs(nextDomNode, nextNode);
 
             for (let i = 0, l = nextNode.childNodes.length; i < l; i++) {
                 nextDomNode.appendChild(createElement(nextNode.childNodes[i], document, skipCreation));
@@ -397,6 +371,36 @@ function createElement(nextNode, document, skipCreation) {
     }
 
     return nextDomNode;
+}
+
+function setAttrs(domNode, nextNode, node) {
+    if (nextNode.dynamic) {
+        for (let name in nextNode.dynamic.attrs) {
+            setAttr(domNode, name, nextNode.dynamic.attrs[name]);
+        }
+    }
+
+    if (nextNode.attrs) {
+        for (let name in nextNode.attrs) {
+            if (!noRenderAttrs[name] && (!nextNode.dynamic || nextNode.dynamic.attrs[name] === undefined)) {
+                setAttr(domNode, name, nextNode.attrs[name]);
+            }
+        }
+
+        if (typeof nextNode.attrs.ref === 'function') {
+            nextNode.attrs.ref(nextNode.dynamic);
+        }
+    }
+}
+
+function setAttr(domNode, name, value) {
+    if (name === 'style') {
+        for (let cssProp in value) {
+            domNode.style[cssProp] = value[cssProp];
+        }
+    } else {
+        domNode[name] = value;
+    }
 }
 
 export {
