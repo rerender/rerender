@@ -1,0 +1,22 @@
+{
+    "compilerOptions": {
+        "target": "es5",
+        "declaration": true,
+        "module": "commonjs",
+        "outDir": "./lib/",
+        "jsx": "react",
+        "jsxFactory": "h",
+        "noImplicitReturns": true,
+        "noImplicitThis": true,
+        "noImplicitAny": true,
+        "strictNullChecks": true
+    },
+    "include": [
+        "./src/**/*"
+    ],
+    "exclude": [
+        "./src/test.tsx",
+        "./src/diff.ts",
+        "./src/createInitialPatch.ts"
+    ]
+}
