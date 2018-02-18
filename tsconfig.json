@@ -12,11 +12,7 @@
         "strictNullChecks": true
     },
     "include": [
-        "./src/**/*"
-    ],
-    "exclude": [
-        "./src/test.tsx",
-        "./src/diff.ts",
-        "./src/createInitialPatch.ts"
+        "./src/**/*",
+        "./spec/**/*"
     ]
 }

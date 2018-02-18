@@ -4,3 +4,4 @@ coverage/
 tags
 package-lock.json
 .DS_Store
+.nyc_output/
