@@ -7,7 +7,8 @@ export interface Map<T> {
 }
 
 export interface StatelessComponent<Props> {
-    (props: Props, children: Children): Renderable;
+    // FIXME: must be Renderable, not any
+    (props: Props, children: Children): any;
     displayName?: string;
 }
 
@@ -44,7 +45,7 @@ export type Children = Renderable | RenderableArray;
 
 declare global {
     namespace JSX {
-        type Element = any;
+        interface Element extends Template {}
 
         interface IntrinsicAttributes {
             controller?: Controller | Controller[];

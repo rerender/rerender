@@ -9,11 +9,11 @@ export abstract class Component<
     State = void,
     Defaults extends Partial<Props> = {}
 > {
-    public $externalProps: Props;
     public $componentMounted?: boolean;
     public $settingProps?: boolean;
     public $id?: string;
     public $channel?: Channel;
+    public $externalProps?: Props; // For correct defaultProps support only
 
     protected state: State;
     private $prevState: State;
