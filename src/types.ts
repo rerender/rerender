@@ -44,7 +44,7 @@ export type Children = Renderable | RenderableArray;
 
 declare global {
     namespace JSX {
-        type Element = Renderable;
+        type Element = Template;
 
         interface IntrinsicAttributes {
             controller?: Controller | Controller[];
