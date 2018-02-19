@@ -1,50 +1,50 @@
 const noop = () => {};
 
-export type Callback = (payload?: any) => any;
+export type Listener = (payload?: any) => any;
 
 export class Channel {
-    private callbacks: {
-        [eventName: string]: Callback[]
+    private listeners: {
+        [eventName: string]: Listener[]
     };
 
     public emit(eventName: string, payload?: any): void {
-        if (!this.callbacks || !this.callbacks[eventName]) {
+        if (!this.listeners || !this.listeners[eventName]) {
             return;
         }
 
-        for (let i = 0, l = this.callbacks[eventName].length; i < l; i++) {
-            ((this.callbacks[eventName] || {})[i] || noop)(payload);
+        for (let i = 0, l = this.listeners[eventName].length; i < l; i++) {
+            ((this.listeners[eventName] || {})[i] || noop)(payload);
         }
     }
 
-    public on(eventName: string, callback: Callback): void {
-        if (!this.callbacks) {
-            this.callbacks = {};
+    public on(eventName: string, listener: Listener): void {
+        if (!this.listeners) {
+            this.listeners = {};
         }
 
-        if (!this.callbacks[eventName]) {
-            this.callbacks[eventName] = [];
-        } else if (this.callbacks[eventName].indexOf(callback) !== -1) {
+        if (!this.listeners[eventName]) {
+            this.listeners[eventName] = [];
+        } else if (this.listeners[eventName].indexOf(listener) !== -1) {
             return;
         }
 
-        this.callbacks[eventName].push(callback);
+        this.listeners[eventName].push(listener);
     }
 
-    public un(eventName: string, callback?: Callback): void {
-        if (!this.callbacks || !this.callbacks[eventName]) {
+    public un(eventName: string, listener?: Listener): void {
+        if (!this.listeners || !this.listeners[eventName]) {
             return;
         }
 
-        if (!callback) {
-            delete this.callbacks[eventName];
+        if (!listener) {
+            delete this.listeners[eventName];
             return;
         }
 
-        const index = this.callbacks[eventName].indexOf(callback);
+        const index = this.listeners[eventName].indexOf(listener);
 
         if (index !== -1) {
-            this.callbacks[eventName].splice(index, 1);
+            this.listeners[eventName].splice(index, 1);
         }
     }
 }
