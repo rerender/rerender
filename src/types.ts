@@ -1,6 +1,6 @@
 import { Template } from './Template';
+import { TemplateFragment } from './TemplateFragment';
 import { Component } from './Component';
-import { Fragment } from './Fragment';
 
 export interface Map<T> {
     [key: string]: T;
@@ -19,7 +19,7 @@ export interface ComponentClass<C extends Component<any>> {
     new(...args: any[]): C;
 }
 
-export type ComponentType = string | ComponentClass<any> | StatelessComponent<any, any> | typeof Fragment;
+export type ComponentType = string | ComponentClass<any> | StatelessComponent<any, any>;
 
 export type Renderable =
     string |
@@ -29,6 +29,7 @@ export type Renderable =
     undefined |
     null |
     Template |
+    TemplateFragment |
     RenderableArray;
 
 export interface RenderableArray extends Array<Renderable> {}
