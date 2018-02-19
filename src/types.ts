@@ -6,26 +6,26 @@ export interface Map<T> {
     [key: string]: T;
 }
 
-export interface StatelessComponent<Props, Defaults extends Partial<Props> = {}> {
-    (props: Props & Defaults, children: Children): Renderable;
+export interface StatelessComponent<Props> {
+    (props: Props, children: Children): Renderable;
     displayName?: string;
 }
 
-export interface ComponentClass<C extends Component<any>> {
+export interface ComponentClass<C extends Component<Props, State, Defaults>, Props = any, State = any, Defaults = any> {
     wrapper?: boolean;
     displayName?: string;
     store?: boolean;
-    defaultProps?: Map<any>;
+    defaultProps?: Defaults;
     new(...args: any[]): C;
 }
 
-export type WrapperClass<C extends Component<any>> = {
+export type WrapperClass<C extends Component<Props, State, Defaults>, Props = any, State = any, Defaults = any> = {
     wrapper: true
 } & ComponentClass<C>;
 
 export type Controller = (Wrapped: ComponentClass<any>) => WrapperClass<any>;
 
-export type ComponentType = string | ComponentClass<any> | StatelessComponent<any, any>;
+export type ComponentType = string | ComponentClass<any> | StatelessComponent<any>;
 
 export type Renderable =
     string |
@@ -44,7 +44,7 @@ export type Children = Renderable | RenderableArray;
 
 declare global {
     namespace JSX {
-        type Element = Template;
+        type Element = any;
 
         interface IntrinsicAttributes {
             controller?: Controller | Controller[];
@@ -58,6 +58,8 @@ declare global {
             [key: string]: any;
         }
 
-        interface ElementAttributesProperty { externalProps: {}; }
+        interface ElementAttributesProperty {
+            $externalProps: {};
+        }
     }
 }
