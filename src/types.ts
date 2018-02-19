@@ -19,6 +19,12 @@ export interface ComponentClass<C extends Component<any>> {
     new(...args: any[]): C;
 }
 
+export type WrapperClass<C extends Component<any>> = {
+    wrapper: true
+} & ComponentClass<C>;
+
+export type Controller = (Wrapped: ComponentClass<any>) => WrapperClass<any>;
+
 export type ComponentType = string | ComponentClass<any> | StatelessComponent<any, any>;
 
 export type Renderable =
@@ -35,3 +41,23 @@ export type Renderable =
 export interface RenderableArray extends Array<Renderable> {}
 
 export type Children = Renderable | RenderableArray;
+
+declare global {
+    namespace JSX {
+        type Element = Renderable;
+
+        interface IntrinsicAttributes {
+            controller?: Controller | Controller[];
+            uniqid?: string | number;
+            key?: string | number;
+            ref?: (ref: HTMLElement | Component<any>) => any;
+            wrapperRef?: (ref: ComponentClass<any>) => any;
+        }
+
+        interface IntrinsicElements {
+            [key: string]: any;
+        }
+
+        interface ElementAttributesProperty { externalProps: {}; }
+    }
+}
