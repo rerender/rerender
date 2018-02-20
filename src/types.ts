@@ -16,22 +16,6 @@ export interface StatelessComponent<Props extends {
     displayName?: string;
 }
 
-export interface ComponentClass<C extends Component<Props, State, Defaults>, Props = any, State = any, Defaults = any> {
-    wrapper?: boolean;
-    displayName?: string;
-    store?: boolean;
-    defaultProps?: Defaults;
-    new(...args: any[]): C;
-}
-
-export type WrapperClass<C extends Component<Props, State, Defaults>, Props = any, State = any, Defaults = any> = {
-    wrapper: true
-} & ComponentClass<C>;
-
-export type Controller = (Wrapped: ComponentClass<any>) => WrapperClass<any>;
-
-export type ComponentType = string | ComponentClass<any> | StatelessComponent<any>;
-
 export type Renderable =
     string |
     number |
@@ -47,19 +31,46 @@ export interface RenderableArray extends Array<Renderable> {}
 
 export type Children = Renderable | RenderableArray;
 
+export type Controller = (Wrapped: ComponentClass) => WrapperClass;
+
+export interface ComponentClass<C extends Component<any> = Component<any>> {
+    wrapper?: boolean;
+    displayName?: string;
+    store?: boolean;
+    defaultProps?: any;
+    new(...args: any[]): C;
+}
+
+export type WrapperClass<C extends Component<any> = Component<any>> = {
+    wrapper: true
+} & ComponentClass<C>;
+
+export type ComponentType = string | ComponentClass | StatelessComponent<any>;
+
 export type Path = Array<string | number>;
 
-export type Reducer = (getState: Store<any>['getState'], setState: Store<any>['setState'], payload: any) => void;
-export type RerenderEvent = {
+export type Reducer<State = any, Payload = any> = (
+    payload: Payload,
+    options: { getState: Store<State>['getState'], setState: Store<State>['setState'] }
+) => void;
+
+export type RerenderEvent<State> = {
     name: string,
-    get?: (state: any, payload: any) => any,
-    effect?: (state: any, payload: any) => any,
-    reducers?: Reducer[],
+    get?: (payload: any, options: { state: State }) => any,
+    effect?: (
+        payload: any,
+        options: {
+            state: State,
+            dispatch: Dispatch
+        }
+    ) => any,
+    reducers?: Array<Reducer<State, any>>,
     cachePeriod?: number,
     crossUserCache?: boolean
 };
 
-export type Dispatch = (event: RerenderEvent, payload: any) => Promise<any>;
+// FIXME: Promise<any> not always Promise actually
+export type Dispatch = (event: RerenderEvent<any>, payload: any) => Promise<any>;
 
 export type Key = string | number;
 

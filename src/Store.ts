@@ -2,7 +2,7 @@ import { Channel } from './Channel';
 import { shallowClone } from './shallowClone';
 import { Path, Map } from './types';
 
-export class Store<State extends Map<any>> {
+export class Store<State extends Map<any> = any> {
     private prevState?: Partial<State>;
     private $channel?: Channel;
 
