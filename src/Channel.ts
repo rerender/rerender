@@ -3,7 +3,7 @@ const noop = () => {};
 export type Listener = (payload?: any) => any;
 
 export class Channel {
-    private listeners: {
+    private listeners?: {
         [eventName: string]: Listener[]
     };
 

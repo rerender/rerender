@@ -19,13 +19,13 @@ export abstract class Component<
 > {
     public $externalProps?: Props; // For correct defaultProps typescript support only
 
-    protected state: State;
+    protected abstract state: State;
 
     private $componentMounted?: boolean;
     private $insideSettingProps?: boolean;
     private $id?: string;
     private $channel?: Channel;
-    private $prevState: State;
+    private $prevState?: State;
 
     constructor(public props: Props & Defaults, protected dispatch: Dispatch ) {}
 
@@ -81,7 +81,7 @@ export abstract class Component<
             if (this.$getState(path) !== value) {
                 if (!this.$prevState) {
                     this.$prevState = this.state;
-                    this.state = shallowClone(this.$prevState);
+                    this.state = shallowClone(this.state);
                 }
 
                 let stateParent: any = this.state;

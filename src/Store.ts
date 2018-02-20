@@ -1,13 +1,12 @@
 import { Channel } from './Channel';
 import { shallowClone } from './shallowClone';
-import { Path } from './types';
+import { Path, Map } from './types';
 
-export class Store<State> {
-    private prevState: Partial<State>;
-    private state: State;
+export class Store<State extends Map<any>> {
+    private prevState?: Partial<State>;
     private $channel?: Channel;
 
-    constructor() {
+    constructor(private state: State) {
         this.getState = this.getState.bind(this);
         this.setState = this.setState.bind(this);
     }
