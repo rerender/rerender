@@ -1,4 +1,10 @@
-import { Map, Children, Renderable, Path } from './types';
+import {
+    Map,
+    Children,
+    Renderable,
+    Path,
+    Dispatch
+} from './types';
 import { Channel } from './Channel';
 import { shallowClone } from './shallowClone';
 
@@ -11,34 +17,35 @@ export abstract class Component<
     Defaults extends Partial<Props> = {},
     PropsChildren = Children
 > {
-    public $componentMounted?: boolean;
-    public $settingProps?: boolean;
-    public $id?: string;
-    public $channel?: Channel;
-    public $externalProps?: Props; // For correct defaultProps support only
+    public $externalProps?: Props; // For correct defaultProps typescript support only
 
     protected state: State;
+
+    private $componentMounted?: boolean;
+    private $insideSettingProps?: boolean;
+    private $id?: string;
+    private $channel?: Channel;
     private $prevState: State;
 
-    constructor(public props: Props & Defaults ) {}
+    constructor(public props: Props & Defaults, protected dispatch: Dispatch ) {}
 
-    public componentWillUnmount?(): any;
     public componentDidMount?(): any;
     public componentDidCatch?(error: Error): any;
     public componentDidUpdate?(): any;
     public componentWillReceiveProps?(nextProps: Props & Defaults): any;
+    public componentWillUnmount?(): any;
     public componentWillDestroy?(): any;
     public abstract render(): Renderable;
 
-    public getStateSnapshot(path?: Path): any {
+    public $getStateSnapshot(path?: Path): any {
         if (this.$prevState) {
             delete this.$prevState;
         }
 
-        return this.getState(path);
+        return this.$getState(path);
     }
 
-    public getState(path?: Path): any {
+    public $getState(path?: Path): any {
         if (path && Array.isArray(path)) {
             let result: any = this.state;
 
@@ -52,9 +59,26 @@ export abstract class Component<
         }
     }
 
+    public isMounted() {
+        return this.$componentMounted;
+    }
+
+    public $setOptions(channel: Channel, id: string) {
+        this.$channel = channel;
+        this.$id = id;
+    }
+
+    public $setMounted(mounted: boolean) {
+        this.$componentMounted = mounted;
+    }
+
+    public $setInsideSettingProps(inside: boolean) {
+        this.$insideSettingProps = inside;
+    }
+
     protected setState(value: any, path?: Path): void {
         if (path && Array.isArray(path)) {
-            if (this.getState(path) !== value) {
+            if (this.$getState(path) !== value) {
                 if (!this.$prevState) {
                     this.$prevState = this.state;
                     this.state = shallowClone(this.$prevState);
@@ -79,7 +103,7 @@ export abstract class Component<
 
                 stateParent[path[last]] = value;
 
-                if (this.$channel && this.$componentMounted && !this.$settingProps) {
+                if (this.$channel && this.$componentMounted && !this.$insideSettingProps) {
                     this.$channel.emit('component:change', this.$id);
                 }
             }

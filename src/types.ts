@@ -1,4 +1,5 @@
 import { Template } from './Template';
+import { Store } from './Store';
 import { TemplateFragment } from './TemplateFragment';
 import { Component } from './Component';
 
@@ -48,16 +49,31 @@ export type Children = Renderable | RenderableArray;
 
 export type Path = Array<string | number>;
 
+export type Reducer = (getState: Store<any>['getState'], setState: Store<any>['setState'], payload: any) => void;
+export type RerenderEvent = {
+    name: string,
+    get?: (state: any, payload: any) => any,
+    effect?: (state: any, payload: any) => any,
+    reducers?: Reducer[],
+    cachePeriod?: number,
+    crossUserCache?: boolean
+};
+
+export type Dispatch = (event: RerenderEvent, payload: any) => Promise<any>;
+
+export type Key = string | number;
+
 declare global {
     namespace JSX {
         interface Element extends Template {}
 
         interface IntrinsicAttributes {
             controller?: Controller | Controller[];
-            uniqid?: string | number;
-            key?: string | number;
+            uniqid?: Key;
+            key?: Key;
             ref?: (ref: HTMLElement | Component<any>) => any;
             wrapperRef?: (ref: ComponentClass<any>) => any;
+            [prop: string]: any; // Enable any props for elements with controller property
         }
 
         interface IntrinsicElements {
