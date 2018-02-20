@@ -19,7 +19,7 @@ export abstract class Component<
 > {
     public $externalProps?: Props; // For correct defaultProps typescript support only
 
-    protected abstract state: State;
+    protected state: State;
 
     private $componentMounted?: boolean;
     private $insideSettingProps?: boolean;
