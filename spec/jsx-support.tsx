@@ -22,8 +22,7 @@ describe('jsx', () => {
         };
 
         class Block extends Component<Props, void, typeof defaultProps> {
-            static defaultProps = defaultProps;
-            public children: string;
+            static defaultProps: Partial<Props> = defaultProps;
 
             render() {
                 const { value, valueOptional } = this.props;

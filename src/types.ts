@@ -6,9 +6,12 @@ export interface Map<T> {
     [key: string]: T;
 }
 
-export interface StatelessComponent<Props> {
+export interface StatelessComponent<Props extends {
+    [prop: string]: any,
+    children?: PropsChildren
+}, PropsChildren = Children> {
     // FIXME: must be Renderable, not any
-    (props: Props, children: Children): any;
+    (props: Props): any;
     displayName?: string;
 }
 
@@ -43,6 +46,8 @@ export interface RenderableArray extends Array<Renderable> {}
 
 export type Children = Renderable | RenderableArray;
 
+export type Path = Array<string | number>;
+
 declare global {
     namespace JSX {
         interface Element extends Template {}
@@ -61,6 +66,10 @@ declare global {
 
         interface ElementAttributesProperty {
             $externalProps: {};
+        }
+
+        interface ElementChildrenAttribute {
+            children: {};  // specify children name to use
         }
     }
 }

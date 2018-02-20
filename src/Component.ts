@@ -1,13 +1,15 @@
-import { Map, Children, Renderable } from './types';
+import { Map, Children, Renderable, Path } from './types';
 import { Channel } from './Channel';
 import { shallowClone } from './shallowClone';
 
-export type Path = Array<string | number>;
-
 export abstract class Component<
-    Props extends Map<any>,
+    Props extends {
+        [prop: string]: any;
+        children?: PropsChildren
+    },
     State = void,
-    Defaults extends Partial<Props> = {}
+    Defaults extends Partial<Props> = {},
+    PropsChildren = Children
 > {
     public $componentMounted?: boolean;
     public $settingProps?: boolean;
@@ -18,13 +20,13 @@ export abstract class Component<
     protected state: State;
     private $prevState: State;
 
-    constructor(public props: Props & Defaults, public children: Children) {}
+    constructor(public props: Props & Defaults ) {}
 
     public componentWillUnmount?(): any;
     public componentDidMount?(): any;
     public componentDidCatch?(error: Error): any;
     public componentDidUpdate?(): any;
-    public componentWillReceiveProps?(nextProps: Props, nextChildren: Children): any;
+    public componentWillReceiveProps?(nextProps: Props & Defaults): any;
     public componentWillDestroy?(): any;
     public abstract render(): Renderable;
 
@@ -78,7 +80,7 @@ export abstract class Component<
                 stateParent[path[last]] = value;
 
                 if (this.$channel && this.$componentMounted && !this.$settingProps) {
-                    this.$channel.emit('rerender-one', this.$id);
+                    this.$channel.emit('component:change', this.$id);
                 }
             }
         } else if (value && typeof value === 'object') {
