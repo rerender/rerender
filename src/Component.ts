@@ -59,7 +59,7 @@ export abstract class Component<
         }
     }
 
-    public isMounted() {
+    public isComponentMounted() {
         return this.$componentMounted;
     }
 
