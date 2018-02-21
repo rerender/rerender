@@ -22,7 +22,7 @@ export class Observable<V> {
     public subscribe(
         onNext: (value: V) => any,
         onError: (error: Error) => any,
-        onComplete: () => any
+        onComplete: () => any = () => {}
     ) {
         if (this.stopped) {
             return;

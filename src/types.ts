@@ -69,6 +69,11 @@ export type RerenderEvent<State> = {
     crossUserCache?: boolean
 };
 
+export type RenderServerConfig = {
+    iterations?: number,
+    stream?: boolean
+};
+
 // FIXME: Promise<any> not always Promise actually
 export type Dispatch = (event: RerenderEvent<any>, payload: any) => Promise<any>;
 
