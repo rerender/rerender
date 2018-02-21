@@ -2,14 +2,14 @@
   "name": "rerender",
   "version": "0.0.6",
   "description": "Isomorphic virtual dom framework",
-  "main": "lib/src/index.js",
-  "types": "lib/src/index.d.ts",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rerender/rerender.git"
   },
   "scripts": {
-    "compile": "tsc -p .",
+    "compile": "tsc -p ./tsconfig-compile.json",
     "ts": "tsc --noEmit -p .",
     "prepublishOnly": "npm test && npm run compile",
     "test:unit": "jasmine-ts",

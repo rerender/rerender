@@ -1,20 +1,5 @@
 {
-    "compilerOptions": {
-        "target": "es5",
-        "declaration": true,
-        "module": "commonjs",
-        "outDir": "./lib/",
-        "jsx": "react",
-        "jsxFactory": "h",
-        "noImplicitReturns": true,
-        "noImplicitThis": true,
-        "noImplicitAny": true,
-        "strictNullChecks": true,
-        "lib": [
-            "es6",
-            "dom"
-        ]
-    },
+    "extends": "./tsconfig-compile",
     "include": [
         "./src/**/*",
         "./spec/**/*"
