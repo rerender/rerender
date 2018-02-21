@@ -5,6 +5,7 @@ import { ComponentClass, Dispatch, Map, Renderable, RenderServerConfig, Stateles
 import { Observable } from './Observable';
 import { escapeHtml } from './escapeHtml';
 import { noop } from './noop';
+import { intrinsicProps, intrinsicPropsWrapper } from './constants';
 
 export function renderServer(template: Renderable, config: RenderServerConfig): string {
     let html!: string;
@@ -143,28 +144,60 @@ function renderAttrs(props: Map<any>) {
 
 function renderComponent(template: Template, options: RenderOptions) {
     const componentType = template.componentType as ComponentClass;
-    const props = renderProps(template.props, template.children, componentType.defaultProps);
+    const props = getComponentProps(
+        template.props,
+        template.children,
+        componentType.defaultProps,
+        componentType.wrapper ? intrinsicPropsWrapper : intrinsicProps
+    );
     const instance = new componentType(props, options.dispatch);
     render(instance.render(), options);
 }
 
 function renderStateless(template: Template, options: RenderOptions) {
     const componentType = template.componentType as StatelessComponent<any>;
-    const props = renderProps(template.props, template.children);
+    const props = getComponentProps(template.props, template.children);
     render(componentType(props), options);
-}
-
-function renderProps(
-    props: Map<any> | null | undefined,
-    children: Renderable[] | undefined,
-    defaultProps?: Map<any>
-): Map<any> {
-    // TODO
-    return {};
 }
 
 function renderArray(template: Renderable[], options: RenderOptions) {
     for (let i = 0, l = template.length; i < l; i++) {
         render(template[i], options);
     }
+}
+
+function getComponentProps(
+    props: Map<any> | null | undefined,
+    children: Renderable[] | undefined,
+    defaultProps?: Map<any>,
+    intrinsic: Map<any> = intrinsicProps
+): Map<any> {
+    const componentProps: Map<any> = Object.keys(props || {})
+        .reduce((memo: Map<any>, key) => {
+            if (!intrinsic[key]) {
+                memo[key] = componentProps[key];
+            }
+
+            return memo;
+        }, {});
+
+    if (Array.isArray(children)) {
+        if (children.length > 1) {
+            componentProps.children = new TemplateFragment(children);
+        } else {
+            componentProps.children = children[0];
+        }
+    } else {
+        componentProps.children = children;
+    }
+
+    if (defaultProps) {
+        for (const name in defaultProps) {
+            if (componentProps[name] === undefined) {
+                componentProps[name] = defaultProps[name];
+            }
+        }
+    }
+
+    return componentProps;
 }
