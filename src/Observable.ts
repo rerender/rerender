@@ -9,7 +9,7 @@ type Listener<V> = [
     () => any
 ];
 
-export default class Observable<V> {
+export class Observable<V> {
     private connected: boolean = false;
     private stopped: boolean = false;
     private listeners: Array<Listener<V>> = [];

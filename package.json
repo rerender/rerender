@@ -2,14 +2,15 @@
   "name": "rerender",
   "version": "0.0.6",
   "description": "Isomorphic virtual dom framework",
-  "main": "lib/index.js",
-  "types": "lib/index.d.ts",
+  "main": "lib/src/index.js",
+  "types": "lib/src/index.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rerender/rerender.git"
   },
   "scripts": {
-    "compile": "tsc",
+    "compile": "tsc -p .",
+    "ts": "tsc --noEmit -p .",
     "prepublishOnly": "npm test && npm run compile",
     "test:unit": "jasmine-ts",
     "test:coverage": "node --max_old_space_size=3000 ./node_modules/.bin/nyc npm run test:unit",
@@ -37,7 +38,6 @@
     "cache": false
   },
   "devDependencies": {
-    "@types/es6-promise": "^3.3.0",
     "@types/jasmine": "^2.6.0",
     "jasmine-ts": "^0.2.1",
     "jsdom": "^11.6.2",

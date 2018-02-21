@@ -22,8 +22,7 @@ const state = {
 
 describe('Store', () => {
     beforeEach(() => {
-        store = new Store();
-        store.setState(state);
+        store = new Store(state);
     });
 
     describe('method setState', () => {
