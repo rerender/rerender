@@ -233,7 +233,7 @@ function getComponentProps(
     const componentProps: Map<any> = Object.keys(props || {})
         .reduce((memo: Map<any>, key) => {
             if (!intrinsic[key]) {
-                memo[key] = componentProps[key];
+                memo[key] = (props as Map<any>)[key];
             }
 
             return memo;

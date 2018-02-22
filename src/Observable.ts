@@ -17,7 +17,11 @@ export class Observable<V> {
     constructor(
         private onConnect: OnConnectSignature<V>,
         private autoConnect: boolean = true
-    ) {}
+    ) {
+        this.next = this.next.bind(this);
+        this.error = this.error.bind(this);
+        this.complete = this.complete.bind(this);
+    }
 
     public subscribe(
         onNext: (value: V) => any,
@@ -33,6 +37,8 @@ export class Observable<V> {
         if (this.autoConnect) {
             this.connect();
         }
+
+        return this;
     }
 
     public unsubscribe(onNext?: (value: V) => any) {
@@ -42,6 +48,8 @@ export class Observable<V> {
         } else {
             this.listeners = [];
         }
+
+        return this;
     }
 
     public connect() {
@@ -53,6 +61,8 @@ export class Observable<V> {
             }
             this.connected = true;
         }
+
+        return this;
     }
 
     private next(value: V) {

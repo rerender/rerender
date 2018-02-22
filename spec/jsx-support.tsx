@@ -5,9 +5,9 @@ import { StatelessComponent } from '../src/types';
 
 describe('jsx', () => {
     it('should create Template with componentType: string, props and children', () => {
-        const template = <div className='block'>text of div</div>;
+        const template = <div class='block'>text of div</div>;
         expect(template.componentType).toBe('div');
-        expect(template.props).toEqual({ className: 'block' });
+        expect(template.props).toEqual({ class: 'block' });
         expect(template.children).toEqual(['text of div']);
     });
 

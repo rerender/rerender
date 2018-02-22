@@ -12,7 +12,7 @@ export interface StatelessComponent<Props extends {
     children?: PropsChildren
 }, PropsChildren = Children> {
     // FIXME: must be Renderable, not any
-    (props: Props): any;
+    (props: Props & { children?: PropsChildren }): any;
     displayName?: string;
     uberComponent?: boolean;
 }
@@ -96,11 +96,10 @@ declare global {
         interface IntrinsicElements {
             [key: string]: {
                 [prop: string]: any;
-                className?: string;
-                htmlFor?: string;
-                class?: undefined;
-                for?: undefined;
-                maxlength?: undefined;
+                class?: string;
+                className?: undefined;
+                htmlFor?: undefined;
+                maxLength?: undefined;
             };
         }
 
