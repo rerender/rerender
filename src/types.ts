@@ -14,6 +14,7 @@ export interface StatelessComponent<Props extends {
     // FIXME: must be Renderable, not any
     (props: Props): any;
     displayName?: string;
+    uberComponent?: boolean;
 }
 
 export type Renderable =
@@ -93,7 +94,14 @@ declare global {
         }
 
         interface IntrinsicElements {
-            [key: string]: any;
+            [key: string]: {
+                [prop: string]: any;
+                className?: string;
+                htmlFor?: string;
+                class?: undefined;
+                for?: undefined;
+                maxlength?: undefined;
+            };
         }
 
         interface ElementAttributesProperty {

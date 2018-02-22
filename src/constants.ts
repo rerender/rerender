@@ -12,3 +12,25 @@ export const intrinsicPropsWrapper: Map<boolean> = {
     uniqid: true,
     wrapperRef: true
 };
+
+export const disabledAttrs: Map<boolean> = {
+    targetComponentType: true,
+    key: true,
+    uniqid: true,
+    ref: true,
+    wrapperRef: true,
+    children: true,
+    innerHTML: true,
+    nodeValue: true,
+    textContent: true
+};
+
+export const jsAttrToHtml: Map<string> = {
+    className: 'class',
+    htmlFor: 'for'
+};
+
+export const serverIgnoreAttrTypes: Map<boolean> = {
+    function: true,
+    undefined: true
+};

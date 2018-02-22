@@ -10,7 +10,7 @@
   },
   "scripts": {
     "compile": "tsc -p ./tsconfig-compile.json",
-    "ts": "tsc --noEmit -p .",
+    "ts": "tsc --noEmit -p ./tsconfig.json",
     "prepublishOnly": "npm test && npm run compile",
     "test:unit": "jasmine-ts",
     "test:coverage": "node --max_old_space_size=3000 ./node_modules/.bin/nyc npm run test:unit",

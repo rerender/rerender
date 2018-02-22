@@ -1,7 +1,7 @@
 import { Template } from './Template';
 import { Fragment } from './Fragment';
 import { TemplateFragment } from './TemplateFragment';
-import { ComponentType, Map, Renderable, Children } from './types';
+import { ComponentType, Map, Renderable } from './types';
 import { Controllers } from './Controllers';
 
 export type CreateTemplateSignature = (
@@ -12,7 +12,7 @@ export type CreateTemplateSignature = (
 
 export const createTemplate: CreateTemplateSignature = function(componentType, props) {
     const length = arguments.length;
-    let children: Children;
+    let children: Renderable[] | undefined;
 
     if (length > 2) {
         children = Array(length - 2);

@@ -1,11 +1,14 @@
 import { Template } from './Template';
 import { Component } from './Component';
 import { TemplateFragment } from './TemplateFragment';
+import { Flush, Doctype } from './uberComponents';
 import { ComponentClass, Dispatch, Map, Renderable, RenderServerConfig, StatelessComponent } from './types';
 import { Observable } from './Observable';
 import { escapeHtml } from './escapeHtml';
+import { escapeHtmlAttr } from './escapeHtmlAttr';
+import { convertStyle } from './convertStyle';
 import { noop } from './noop';
-import { intrinsicProps, intrinsicPropsWrapper } from './constants';
+import { disabledAttrs, intrinsicProps, intrinsicPropsWrapper, serverIgnoreAttrTypes } from './constants';
 
 export function renderServer(template: Renderable, config: RenderServerConfig): string {
     let html!: string;
@@ -97,6 +100,8 @@ function render(template: Renderable, options: RenderOptions) {
                 renderElement(template, options);
             } else if (template.componentType instanceof Component) {
                 renderComponent(template, options);
+            } else if ((template.componentType as StatelessComponent<any>).uberComponent) {
+                renderUber(template, options);
             } else {
                 renderStateless(template, options);
             }
@@ -125,21 +130,61 @@ function render(template: Renderable, options: RenderOptions) {
 
 function renderElement(template: Template, options: RenderOptions) {
     if (options.isLastIteration) {
-        const attrs: string = template.props ? renderAttrs(template.props) : '';
+        const attrs: string = template.props ? getAttrs(template.props) : '';
         // TODO: validate tag
         options.next('<' + template.componentType + attrs + '>');
     }
     if (template.children) {
         renderArray(template.children, options);
+    } else if (template.props && typeof template.props.dangerousInnerHtml === 'string') {
+        options.next(template.props.dangerousInnerHtml);
     }
     if (options.isLastIteration) {
         options.next('</' + template.componentType + '>');
     }
 }
 
-function renderAttrs(props: Map<any>) {
-    // TODO style, convert js props to html, attributes?
-    return '';
+function getAttrs(props: Map<any>) {
+    let attrs = '';
+
+    for (const name in props) {
+        const value = props[name];
+        const typeOfValue = typeof value;
+        if (disabledAttrs[name] || serverIgnoreAttrTypes[typeOfValue]) {
+            break;
+        } else if (name === 'style') {
+            attrs += getAttr('style', typeOfValue === 'string' ? value : getStyle(value));
+        } else {
+            attrs += getAttr(name, value);
+        }
+    }
+
+    return attrs;
+}
+
+// TODO: validate name
+function getAttr(name: string, value: any) {
+    if (typeof value === 'boolean') {
+        return value === false ? '' : ' ' + name;
+    }
+
+    return ' ' + name + '="' + escapeHtmlAttr(String(value)) + '"';
+}
+
+function getStyle(value: Map<any>) {
+    let styleString = '';
+
+    if (typeof value === 'object' && value !== null) {
+        styleString = '';
+
+        for (const name in value) {
+            if (value !== undefined) {
+                styleString += `${convertStyle(name)}:${value[name]};`;
+            }
+        }
+    }
+
+    return styleString;
 }
 
 function renderComponent(template: Template, options: RenderOptions) {
@@ -158,6 +203,19 @@ function renderStateless(template: Template, options: RenderOptions) {
     const componentType = template.componentType as StatelessComponent<any>;
     const props = getComponentProps(template.props, template.children);
     render(componentType(props), options);
+}
+
+function renderUber(template: Template, options: RenderOptions) {
+    if (options.isLastIteration) {
+        switch (template.componentType) {
+            case Flush:
+                options.flush();
+                break;
+            case Doctype:
+                options.next('<!DOCTYPE html>');
+                break;
+        }
+    }
 }
 
 function renderArray(template: Renderable[], options: RenderOptions) {
