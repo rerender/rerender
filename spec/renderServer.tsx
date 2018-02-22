@@ -2,6 +2,8 @@
 import { h, Component } from '../src/';
 import { StatelessComponent } from '../src/types';
 import { renderServer } from '../src/renderServer';
+import { Fragment } from '../src/Fragment';
+import { Doctype } from '../src/uberComponents';
 
 describe('renderServer', () => {
     it('should stringify element with props and children', () => {
@@ -52,5 +54,21 @@ describe('renderServer', () => {
 
         expect(renderServer(<Block id='id1'>some text</Block>, {}))
             .toEqual('<div class="block" id="id1"><input checked value="some value"></input>some text</div>');
+    });
+
+    it('should support Doctype and Fragment', () => {
+        expect(renderServer(<Fragment>
+            <Doctype />
+            <html>
+                <head>
+                    <title>{'Text of title'}</title>
+                </head>
+                <body>
+                    <div class='main' />
+                </body>
+            </html>
+        </Fragment>, {}))
+            .toEqual('<!DOCTYPE html><html><head><title>Text of title</title></head>' +
+                '<body><div class="main"></div></body></html>');
     });
 });
