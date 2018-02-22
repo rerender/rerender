@@ -27,7 +27,7 @@ export abstract class Component<
     private $channel?: Channel;
     private $prevState?: State;
 
-    constructor(public props: Props & Defaults, protected dispatch: Dispatch ) {}
+    constructor(public props: Props & Defaults & { children: PropsChildren }, protected dispatch: Dispatch ) {}
 
     public componentDidMount?(): any;
     public componentDidCatch?(error: Error): any;

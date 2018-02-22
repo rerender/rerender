@@ -98,7 +98,7 @@ function render(template: Renderable, options: RenderOptions) {
         if (template instanceof Template) {
             if (typeof template.componentType === 'string') {
                 renderElement(template, options);
-            } else if (template.componentType instanceof Component) {
+            } else if (template.componentType.prototype instanceof Component) {
                 renderComponent(template, options);
             } else if ((template.componentType as StatelessComponent<any>).uberComponent) {
                 renderUber(template, options);

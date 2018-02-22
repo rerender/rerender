@@ -12,7 +12,7 @@ export interface StatelessComponent<Props extends {
     children?: PropsChildren
 }, PropsChildren = Children> {
     // FIXME: must be Renderable, not any
-    (props: Props & { children?: PropsChildren }): any;
+    (props: Props & { children: PropsChildren }): any;
     displayName?: string;
     uberComponent?: boolean;
 }
