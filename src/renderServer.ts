@@ -37,50 +37,40 @@ export function renderServerStream(template: Renderable, config: RenderServerCon
 
 function renderServerCommon(template: Renderable, config: RenderServerConfig): Observable<string> {
     return new Observable((next, error, complete) => {
-        renderIterations(template, config, next, error, complete);
+        const { iterations: iterationsCount = 1} = config;
+
+        for (let iteration = 1; iteration <= iterationsCount; iteration++) {
+            let html = '';
+            const flush = () => {
+                next(html);
+                html = '';
+            };
+            const nextInner: Next = (value) => {
+                html += value;
+            };
+            const isLastIteration = iteration === iterationsCount;
+
+            render(template, {
+                isLastIteration,
+                next: nextInner,
+                error,
+                // TODO: dispatch
+                dispatch: noop,
+                flush,
+                config
+            });
+
+            if (isLastIteration) {
+                next(html);
+                complete();
+            }
+        }
     });
 }
 
 type Next = (value: string) => any;
 type ErrorSignature = (error: Error) => any;
 type Complete = () => void;
-
-function renderIterations(
-    template: Renderable,
-    config: RenderServerConfig,
-    next: Next,
-    error: ErrorSignature,
-    complete: Complete
-) {
-    const { iterations: iterationsCount = 1} = config;
-
-    for (let iteration = 1; iteration <= iterationsCount; iteration++) {
-        let html = '';
-        const flush = () => {
-            next(html);
-            html = '';
-        };
-        const nextInner: Next = (value) => {
-            html += value;
-        };
-        const isLastIteration = iteration === iterationsCount;
-
-        render(template, {
-            isLastIteration,
-            next: nextInner,
-            // TODO: dispatch
-            dispatch: noop,
-            flush,
-            error,
-            config
-        });
-
-        if (isLastIteration) {
-            next(html);
-        }
-    }
-    complete();
-}
 
 type RenderOptions = {
     isLastIteration: boolean,
@@ -112,10 +102,10 @@ function render(template: Renderable, options: RenderOptions) {
         } else if (Array.isArray(template)) {
             renderArray(template, options);
         } else if (template !== null) {
-            throw new Error(
+            options.error(new Error(
                 `Objects are not valid as Rerender child (found: object ${escapeHtml(JSON.stringify(template))}). ` +
                 'If you meant to render a collection of children, use an array instead.'
-            );
+            ));
         }
     } else if (!options.isLastIteration) {
         return;
@@ -127,12 +117,11 @@ function render(template: Renderable, options: RenderOptions) {
 }
 
 function renderElement(template: Template, options: RenderOptions) {
-    if (!isValidTag(template.componentType as string)) {
-        throw new Error(`Name of tag  "${escapeHtml(template.componentType as string)}" is not valid`);
-    }
-
     if (options.isLastIteration) {
-        const attrs: string = template.props ? getAttrs(template.props) : '';
+        if (!isValidTag(template.componentType as string)) {
+            options.error(new Error(`Name of tag  "${escapeHtml(template.componentType as string)}" is not valid`));
+        }
+        const attrs: string = template.props ? getAttrs(template.props, options) : '';
         options.next('<' + template.componentType + attrs + '>');
     }
     if (template.children) {
@@ -145,11 +134,14 @@ function renderElement(template: Template, options: RenderOptions) {
     }
 }
 
-function getAttrs(props: Map<any>) {
+function getAttrs(props: Map<any>, options: RenderOptions) {
     let attrs = '';
 
     for (const name in props) {
         if (!disabledAttrs[name] && !serverIgnoreAttrTypes[typeof props[name]]) {
+            if (!isValidAttr(name)) {
+                options.error(new Error(`attribute "${escapeHtml(name)}" is not valid`));
+            }
             attrs += getAttr(name, props[name]);
         }
     }
@@ -158,10 +150,6 @@ function getAttrs(props: Map<any>) {
 }
 
 function getAttr(name: string, value: any) {
-    if (!isValidAttr(name)) {
-        throw new Error(`attribute "${escapeHtml(name)}" is not valid`);
-    }
-
     if (typeof value === 'boolean') {
         return value === false ? '' : ' ' + name;
     }
@@ -188,15 +176,17 @@ function renderStateless(template: Template, options: RenderOptions) {
 }
 
 function renderUber(template: Template, options: RenderOptions) {
-    if (options.isLastIteration) {
-        switch (template.componentType) {
-            case Flush:
+    switch (template.componentType) {
+        case Flush:
+            if (options.isLastIteration && options.config.stream) {
                 options.flush();
-                break;
-            case Doctype:
+            }
+            break;
+        case Doctype:
+            if (options.isLastIteration) {
                 options.next('<!DOCTYPE html>');
-                break;
-        }
+            }
+            break;
     }
 }
 
