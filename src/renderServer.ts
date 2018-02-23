@@ -161,8 +161,8 @@ function renderComponent(template: Template, options: RenderOptions) {
 
 function renderInstanceWithCatch(instance: Component<any>, options: RenderOptions) {
     const componentTemplate = instance.render();
+    let flushed = false;
     try {
-        let flushed = false;
         let html = '';
         render(componentTemplate, {
             ...options,
@@ -178,6 +178,9 @@ function renderInstanceWithCatch(instance: Component<any>, options: RenderOption
         });
         options.next(html);
     } catch (e) {
+        if (flushed) {
+            throw e;
+        }
         (instance.componentDidCatch as Function)(e);
         render(instance.render(), options);
     }
