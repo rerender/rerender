@@ -1,12 +1,13 @@
 /* tslint:disable:member-access max-classes-per-file */
 import { h, Component } from '../src/';
+import { Flush } from '../src/uberComponents';
 import { StatelessComponent } from '../src/types';
-import { renderToString } from '../src/renderServer';
+import { renderToString, renderServer } from '../src/renderServer';
 import { Fragment } from '../src/Fragment';
 import { Doctype } from '../src/uberComponents';
 import { concatStyle } from '../src/concatStyle';
 
-describe('renderServer', () => {
+describe('renderToString', () => {
     it('should stringify element with props and children', () => {
         expect(renderToString(
             <div class='block' id={'id1'} style={concatStyle({
@@ -71,5 +72,55 @@ describe('renderServer', () => {
         </Fragment>))
             .toEqual('<!DOCTYPE html><html><head><title>Text of title</title></head>' +
                 '<body><div class="main"></div></body></html>');
+    });
+
+    it('should work componentDidCatch', () => {
+        const Buggy: StatelessComponent<{}> = () => {
+            throw new Error('Error!');
+        };
+        type State = { error?: string };
+        class Guard extends Component<{}, State> {
+            state: State = {};
+
+            componentDidCatch(error: Error) {
+                this.setState({
+                    error: error.message
+                });
+            }
+
+            render() {
+                if (this.state.error) {
+                    return <div class='error'>Sorry, something went wrong: {this.state.error}</div>;
+                }
+
+                return <div class='normal'>
+                    <Buggy />
+                </div>;
+            }
+        }
+        expect(renderToString(<Guard />)).toBe('<div class="error">Sorry, something went wrong: Error!</div>');
+    });
+});
+
+describe('renderServer', () => {
+    it('should work streaming', () => {
+        const mock = jasmine.createSpyObj('mock', ['next', 'error', 'complete']);
+        renderServer(
+            <div class='container'>
+                <div class='header'>Header</div>
+                <Flush />
+                <div class='body'>Body</div>
+                <Flush />
+                <div class='footer'>Footer</div>
+            </div>,
+            { stream: true }
+        ).subscribe(mock.next, mock.error, mock.complete);
+
+        expect(mock.next).toHaveBeenCalledTimes(3);
+        expect(mock.next.calls.argsFor(0)).toEqual(['<div class="container"><div class="header">Header</div>']);
+        expect(mock.next.calls.argsFor(1)).toEqual(['<div class="body">Body</div>']);
+        expect(mock.next.calls.argsFor(2)).toEqual(['<div class="footer">Footer</div></div>']);
+        expect(mock.error).not.toHaveBeenCalled();
+        expect(mock.complete).toHaveBeenCalledTimes(1);
     });
 });
