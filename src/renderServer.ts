@@ -100,7 +100,7 @@ function render(template: Renderable, options: RenderOptions) {
                 renderElement(template, options);
             } else if (template.componentType.prototype instanceof Component) {
                 renderComponent(template, options);
-            } else if ((template.componentType as StatelessComponent<any>).uberComponent) {
+            } else if ((template.componentType as StatelessComponent<any>).$uberComponent) {
                 renderUber(template, options);
             } else {
                 renderStateless(template, options);

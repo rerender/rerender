@@ -14,7 +14,7 @@ export interface StatelessComponent<Props extends {
     // FIXME: must be Renderable, not any
     (props: Props & { children?: PropsChildren }): any;
     displayName?: string;
-    uberComponent?: boolean;
+    $uberComponent?: boolean;
 }
 
 export type Renderable =

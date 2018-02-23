@@ -1,7 +1,7 @@
 import { StatelessComponent } from './types';
 
 export const Flush: StatelessComponent<{}> = () => {};
-Flush.uberComponent = true;
+Flush.$uberComponent = true;
 
 export const Doctype: StatelessComponent<{}> = () => {};
-Doctype.uberComponent = true;
+Doctype.$uberComponent = true;
