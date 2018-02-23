@@ -9,18 +9,27 @@ type Listener<V> = [
     () => any
 ];
 
+export type ObservableConfig = {
+    autoConnect?: boolean,
+    isAsync?: boolean
+};
+
 export class Observable<V> {
     private connected: boolean = false;
     private stopped: boolean = false;
     private listeners: Array<Listener<V>> = [];
+    private autoConnect: boolean;
+    private isAsync: boolean;
 
     constructor(
         private onConnect: OnConnectSignature<V>,
-        private autoConnect: boolean = true
+        { autoConnect = true, isAsync = false }: ObservableConfig = {}
     ) {
         this.next = this.next.bind(this);
         this.error = this.error.bind(this);
         this.complete = this.complete.bind(this);
+        this.autoConnect = autoConnect;
+        this.isAsync = isAsync;
     }
 
     public subscribe(
@@ -54,11 +63,30 @@ export class Observable<V> {
 
     public connect() {
         if (!this.connected) {
-            this.onConnect(this.next, this.error, this.complete);
+            if (this.isAsync) {
+                this.connectAsync();
+            } else {
+                this.connectSync();
+            }
             this.connected = true;
         }
-
         return this;
+    }
+
+    private async connectAsync() {
+        try {
+            await this.onConnect(this.next, this.error, this.complete);
+        } catch (e) {
+            this.error(e);
+        }
+    }
+
+    private connectSync() {
+        try {
+            this.onConnect(this.next, this.error, this.complete);
+        } catch (e) {
+            this.error(e);
+        }
     }
 
     private next(value: V) {

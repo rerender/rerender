@@ -28,7 +28,7 @@ export function renderToString(template: Renderable, config: RenderServerConfig 
     return html;
 }
 
-export function renderServer(template: Renderable, config: RenderServerConfig): Observable<string> {
+export function renderServer(template: Renderable, config: RenderServerConfig = {}): Observable<string> {
     return new Observable(async (next, error, complete) => {
         const { iterations = 1} = config;
 
@@ -58,7 +58,7 @@ export function renderServer(template: Renderable, config: RenderServerConfig): 
                 // await for all dispatch
             }
         }
-    });
+    }, { isAsync: true });
 }
 
 type Next = (value: string) => any;
