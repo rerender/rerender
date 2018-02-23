@@ -4,17 +4,18 @@ import { StatelessComponent } from '../src/types';
 import { renderServer } from '../src/renderServer';
 import { Fragment } from '../src/Fragment';
 import { Doctype } from '../src/uberComponents';
+import { concatStyle } from '../src/concatStyle';
 
 describe('renderServer', () => {
     it('should stringify element with props and children', () => {
         expect(renderServer(
-            <div class='block' id={'id1'} style={{
+            <div class='block' id={'id1'} style={concatStyle({
                 color: 'black',
                 backgroundColor: 'white',
                 MozTransform: 'rotate(30deg)',
                 WebkitTransform: 'rotate(30deg)',
                 transform: 'rotate(30deg)'
-            }}>
+            })}>
                 <input checked value={'some value'} />
             </div>, {})
         ).toEqual('<div class="block" id="id1" style="' +

@@ -19,15 +19,7 @@ export const disabledAttrs: Map<boolean> = {
     uniqid: true,
     ref: true,
     wrapperRef: true,
-    children: true,
-    innerHTML: true,
-    nodeValue: true,
-    textContent: true
-};
-
-export const jsAttrToHtml: Map<string> = {
-    className: 'class',
-    htmlFor: 'for'
+    children: true
 };
 
 export const serverIgnoreAttrTypes: Map<boolean> = {
