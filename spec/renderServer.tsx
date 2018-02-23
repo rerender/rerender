@@ -1,14 +1,14 @@
 /* tslint:disable:member-access max-classes-per-file */
 import { h, Component } from '../src/';
 import { StatelessComponent } from '../src/types';
-import { renderServer } from '../src/renderServer';
+import { renderToString } from '../src/renderServer';
 import { Fragment } from '../src/Fragment';
 import { Doctype } from '../src/uberComponents';
 import { concatStyle } from '../src/concatStyle';
 
 describe('renderServer', () => {
     it('should stringify element with props and children', () => {
-        expect(renderServer(
+        expect(renderToString(
             <div class='block' id={'id1'} style={concatStyle({
                 color: 'black',
                 backgroundColor: 'white',
@@ -33,7 +33,7 @@ describe('renderServer', () => {
             {children}
         </div>;
 
-        expect(renderServer(<Block id='id1'>some text</Block>))
+        expect(renderToString(<Block id='id1'>some text</Block>))
             .toEqual('<div class="block" id="id1"><input checked value="some value"></input>some text</div>');
     });
 
@@ -53,12 +53,12 @@ describe('renderServer', () => {
             }
         }
 
-        expect(renderServer(<Block id='id1'>some text</Block>))
+        expect(renderToString(<Block id='id1'>some text</Block>))
             .toEqual('<div class="block" id="id1"><input checked value="some value"></input>some text</div>');
     });
 
     it('should support Doctype and Fragment', () => {
-        expect(renderServer(<Fragment>
+        expect(renderToString(<Fragment>
             <Doctype />
             <html>
                 <head>

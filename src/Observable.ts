@@ -54,11 +54,7 @@ export class Observable<V> {
 
     public connect() {
         if (!this.connected) {
-            try {
-                this.onConnect(this.next, this.error, this.complete);
-            } catch (error) {
-                this.error(error);
-            }
+            this.onConnect(this.next, this.error, this.complete);
             this.connected = true;
         }
 

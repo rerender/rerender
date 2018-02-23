@@ -10,59 +10,52 @@ import { isValidTag, isValidAttr } from './validate';
 import { noop } from './noop';
 import { disabledAttrs, intrinsicProps, intrinsicPropsWrapper, serverIgnoreAttrTypes } from './constants';
 
-export function renderServer(template: Renderable, config: RenderServerConfig = {}): string {
-    let html!: string;
-    let error!: Error;
+export function renderToString(template: Renderable, config: RenderServerConfig = {}): string {
+    let html = '';
 
-    renderServerCommon(template, { ...config, stream: false, iterations: 1 })
-        .subscribe(value => (html = value), errorObj => (error = errorObj));
-
-    if (error) {
-        throw error;
-    }
+    render(template, {
+        isLastIteration: true,
+        next: (value: string) => (html += value),
+        error: (error: Error) => {
+            throw error;
+        },
+        // TODO: dispatch
+        dispatch: noop,
+        flush: noop,
+        config: { ...config, stream: false, iterations: 1 }
+    });
 
     return html;
 }
 
-export function renderServerIterations(template: Renderable, config: RenderServerConfig): Promise<string> {
-    return new Promise<string>((resolve, reject) => {
-        renderServerCommon(template, { ...config, stream: false })
-            .subscribe(resolve, reject);
-    });
-}
+export function renderServer(template: Renderable, config: RenderServerConfig): Observable<string> {
+    return new Observable(async (next, error, complete) => {
+        const { iterations = 1} = config;
 
-export function renderServerStream(template: Renderable, config: RenderServerConfig): Observable<string> {
-    return renderServerStream(template, { ...config, stream: true });
-}
-
-function renderServerCommon(template: Renderable, config: RenderServerConfig): Observable<string> {
-    return new Observable((next, error, complete) => {
-        const { iterations: iterationsCount = 1} = config;
-
-        for (let iteration = 1; iteration <= iterationsCount; iteration++) {
+        for (let iteration = 1; iteration <= iterations; iteration++) {
             let html = '';
-            const flush = () => {
-                next(html);
-                html = '';
-            };
-            const nextInner: Next = (value) => {
-                html += value;
-            };
-            const isLastIteration = iteration === iterationsCount;
+            const isLastIteration = iteration === iterations;
 
             render(template, {
                 isLastIteration,
-                next: nextInner,
+                next: (value) => {
+                    html += value;
+                },
                 error,
                 // TODO: dispatch
                 dispatch: noop,
-                flush,
+                flush: () => {
+                    next(html);
+                    html = '';
+                },
                 config
             });
 
             if (isLastIteration) {
                 next(html);
                 complete();
+            } else {
+                // await for all dispatch
             }
         }
     });
@@ -70,7 +63,6 @@ function renderServerCommon(template: Renderable, config: RenderServerConfig): O
 
 type Next = (value: string) => any;
 type ErrorSignature = (error: Error) => any;
-type Complete = () => void;
 
 type RenderOptions = {
     isLastIteration: boolean,
