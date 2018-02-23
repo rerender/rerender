@@ -100,6 +100,18 @@ describe('renderToString', () => {
         }
         expect(renderToString(<Guard />)).toBe('<div class="error">Sorry, something went wrong: Error!</div>');
     });
+
+    it('should work dangerousInnerHtml without children', () => {
+        const script = 'const a = true; const b = "1"; const c = a && b;console.log(a < b);';
+        expect(renderToString(<script type='text/javascript' dangerousInnerHtml={script} />))
+            .toBe('<script type="text/javascript">' + script + '</script>');
+    });
+
+    it('should not work dangerousInnerHtml if children present', () => {
+        const script = 'const a = true; const b = "1"; const c = a && b;console.log(a < b);';
+        expect(renderToString(<script type='text/javascript' dangerousInnerHtml={script}>{'a < b; a && b;'}</script>))
+            .toBe('<script type="text/javascript">a &lt; b; a &amp;&amp; b;</script>');
+    });
 });
 
 describe('renderServer', () => {
