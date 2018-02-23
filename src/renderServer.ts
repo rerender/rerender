@@ -16,9 +16,6 @@ export function renderToString(template: Renderable, config: RenderServerConfig 
     render(template, {
         isLastIteration: true,
         next: (value: string) => (html += value),
-        error: (error: Error) => {
-            throw error;
-        },
         // TODO: dispatch
         dispatch: noop,
         flush: noop,
@@ -41,7 +38,6 @@ export function renderServer(template: Renderable, config: RenderServerConfig = 
                 next: (value) => {
                     html += value;
                 },
-                error,
                 // TODO: dispatch
                 dispatch: noop,
                 flush: () => {
@@ -62,13 +58,11 @@ export function renderServer(template: Renderable, config: RenderServerConfig = 
 }
 
 type Next = (value: string) => any;
-type ErrorSignature = (error: Error) => any;
 
 type RenderOptions = {
     isLastIteration: boolean,
     next: Next,
     flush: () => void,
-    error: ErrorSignature,
     config: RenderServerConfig,
     dispatch: Dispatch
 };
@@ -94,10 +88,10 @@ function render(template: Renderable, options: RenderOptions) {
         } else if (Array.isArray(template)) {
             renderArray(template, options);
         } else if (template !== null) {
-            options.error(new Error(
+            throw new Error(
                 `Objects are not valid as Rerender child (found: object ${escapeHtml(JSON.stringify(template))}). ` +
                 'If you meant to render a collection of children, use an array instead.'
-            ));
+            );
         }
     } else if (!options.isLastIteration) {
         return;
@@ -111,7 +105,7 @@ function render(template: Renderable, options: RenderOptions) {
 function renderElement(template: Template, options: RenderOptions) {
     if (options.isLastIteration) {
         if (!isValidTag(template.componentType as string)) {
-            options.error(new Error(`Name of tag  "${escapeHtml(template.componentType as string)}" is not valid`));
+            throw new Error(`Name of tag  "${escapeHtml(template.componentType as string)}" is not valid`);
         }
         const attrs: string = template.props ? getAttrs(template.props, options) : '';
         options.next('<' + template.componentType + attrs + '>');
@@ -132,7 +126,7 @@ function getAttrs(props: Map<any>, options: RenderOptions) {
     for (const name in props) {
         if (!disabledAttrs[name] && !serverIgnoreAttrTypes[typeof props[name]]) {
             if (!isValidAttr(name)) {
-                options.error(new Error(`attribute "${escapeHtml(name)}" is not valid`));
+                throw new Error(`attribute "${escapeHtml(name)}" is not valid`);
             }
             attrs += getAttr(name, props[name]);
         }
@@ -181,13 +175,6 @@ function renderInstanceWithCatch(instance: Component<any>, options: RenderOption
                     html = '';
                 }
             },
-            error: e => {
-                if (!flushed) {
-                    throw e;
-                } else {
-                    options.error(e);
-                }
-            }
         });
         options.next(html);
     } catch (e) {
