@@ -19,7 +19,8 @@ export const disabledAttrs: Map<boolean> = {
     uniqid: true,
     ref: true,
     wrapperRef: true,
-    children: true
+    children: true,
+    dangerousInnerHtml: true
 };
 
 export const serverIgnoreAttrTypes: Map<boolean> = {

@@ -10,7 +10,7 @@ import { isValidTag, isValidAttr } from './validate';
 import { noop } from './noop';
 import { disabledAttrs, intrinsicProps, intrinsicPropsWrapper, serverIgnoreAttrTypes } from './constants';
 
-export function renderServer(template: Renderable, config: RenderServerConfig): string {
+export function renderServer(template: Renderable, config: RenderServerConfig = {}): string {
     let html!: string;
     let error!: Error;
 
@@ -37,23 +37,20 @@ export function renderServerStream(template: Renderable, config: RenderServerCon
 
 function renderServerCommon(template: Renderable, config: RenderServerConfig): Observable<string> {
     return new Observable((next, error, complete) => {
-        try {
-            renderIterations(template, config, next, error);
-            complete();
-        } catch (e) {
-            error(e);
-        }
+        renderIterations(template, config, next, error, complete);
     });
 }
 
 type Next = (value: string) => any;
 type ErrorSignature = (error: Error) => any;
+type Complete = () => void;
 
 function renderIterations(
     template: Renderable,
     config: RenderServerConfig,
     next: Next,
-    error: ErrorSignature
+    error: ErrorSignature,
+    complete: Complete
 ) {
     const { iterations: iterationsCount = 1} = config;
 
@@ -82,6 +79,7 @@ function renderIterations(
             next(html);
         }
     }
+    complete();
 }
 
 type RenderOptions = {
@@ -135,7 +133,6 @@ function renderElement(template: Template, options: RenderOptions) {
 
     if (options.isLastIteration) {
         const attrs: string = template.props ? getAttrs(template.props) : '';
-        // TODO: validate tag
         options.next('<' + template.componentType + attrs + '>');
     }
     if (template.children) {
@@ -160,7 +157,6 @@ function getAttrs(props: Map<any>) {
     return attrs;
 }
 
-// TODO: validate name
 function getAttr(name: string, value: any) {
     if (!isValidAttr(name)) {
         throw new Error(`attribute "${escapeHtml(name)}" is not valid`);

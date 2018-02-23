@@ -90,6 +90,7 @@ declare global {
             key?: Key;
             ref?: (ref: HTMLElement | Component<any>) => any;
             wrapperRef?: (ref: ComponentClass<any>) => any;
+            dangerousInnerHtml?: string;
             [prop: string]: any; // Enable any props for elements with controller property
         }
 

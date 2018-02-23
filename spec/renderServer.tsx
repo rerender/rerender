@@ -17,7 +17,7 @@ describe('renderServer', () => {
                 transform: 'rotate(30deg)'
             })}>
                 <input checked value={'some value'} />
-            </div>, {})
+            </div>)
         ).toEqual('<div class="block" id="id1" style="' +
                 'color:black;background-color:white;-moz-transform:rotate(30deg);' +
                 '-webkit-transform:rotate(30deg);transform:rotate(30deg);' +
@@ -33,7 +33,7 @@ describe('renderServer', () => {
             {children}
         </div>;
 
-        expect(renderServer(<Block id='id1'>some text</Block>, {}))
+        expect(renderServer(<Block id='id1'>some text</Block>))
             .toEqual('<div class="block" id="id1"><input checked value="some value"></input>some text</div>');
     });
 
@@ -53,7 +53,7 @@ describe('renderServer', () => {
             }
         }
 
-        expect(renderServer(<Block id='id1'>some text</Block>, {}))
+        expect(renderServer(<Block id='id1'>some text</Block>))
             .toEqual('<div class="block" id="id1"><input checked value="some value"></input>some text</div>');
     });
 
@@ -68,7 +68,7 @@ describe('renderServer', () => {
                     <div class='main' />
                 </body>
             </html>
-        </Fragment>, {}))
+        </Fragment>))
             .toEqual('<!DOCTYPE html><html><head><title>Text of title</title></head>' +
                 '<body><div class="main"></div></body></html>');
     });
