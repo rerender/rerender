@@ -55,7 +55,7 @@ export function renderServer(template: Renderable, config: RenderServerConfig = 
                 next(html);
                 complete();
             } else {
-                // await for all dispatch
+                // TODO: await for all dispatch
             }
         }
     }, { isAsync: true });
@@ -158,7 +158,42 @@ function renderComponent(template: Template, options: RenderOptions) {
         componentType.wrapper ? intrinsicPropsWrapper : intrinsicProps
     );
     const instance = new componentType(props, options.dispatch);
-    render(instance.render(), options);
+    if (typeof instance.componentDidCatch === 'function') {
+        renderInstanceWithCatch(instance, options);
+    } else {
+        render(instance.render(), options);
+    }
+}
+
+function renderInstanceWithCatch(instance: Component<any>, options: RenderOptions) {
+    const componentTemplate = instance.render();
+    try {
+        let flushed = false;
+        let html = '';
+        render(componentTemplate, {
+            ...options,
+            next: value => (html += value),
+            flush: () => {
+                if (options.isLastIteration && options.config.stream) {
+                    options.next(html);
+                    options.flush();
+                    flushed = true;
+                    html = '';
+                }
+            },
+            error: e => {
+                if (!flushed) {
+                    throw e;
+                } else {
+                    options.error(e);
+                }
+            }
+        });
+        options.next(html);
+    } catch (e) {
+        (instance.componentDidCatch as Function)(e);
+        render(instance.render(), options);
+    }
 }
 
 function renderStateless(template: Template, options: RenderOptions) {
