@@ -16,7 +16,7 @@ export function renderToString(
 ): string {
     let html = '';
 
-    renderIteration(template, { dispatcher, stream: false, iterations: 1 }, true)
+    renderTree(template, { dispatcher, stream: false, iterations: 1 }, true)
         .subscribe(
             (value: string) => (html += value),
             error => { throw error; }
@@ -33,7 +33,7 @@ export function renderServer(template: Renderable, config: RenderServerConfig = 
         for (let iteration = 1; iteration <= iterations; iteration++) {
             const isLastIteration = iteration === iterations;
 
-            renderIteration(template, { stream, dispatcher }, isLastIteration)
+            renderTree(template, { stream, dispatcher }, isLastIteration)
                 .subscribe(
                     stream ? (value: string, flush?: boolean) => {
                         html += value;
@@ -57,7 +57,7 @@ export function renderServer(template: Renderable, config: RenderServerConfig = 
 
 type Next = (value: string, flush?: boolean) => any;
 
-function renderIteration(template: Renderable, config: RenderServerConfig, isLastIteration: boolean) {
+function renderTree(template: Renderable, config: RenderServerConfig, isLastIteration: boolean) {
     return new Observable((next, error, complete) => {
         render(template, config, isLastIteration ? next : undefined);
         complete();
@@ -153,7 +153,7 @@ function renderComponent(template: Template, config: RenderServerConfig, next?: 
         let flushed = false;
         let html = '';
         const componentTemplate = instance.render();
-        renderInstanceWithCatch(componentTemplate, config, Boolean(next))
+        renderTree(componentTemplate, config, Boolean(next))
             .subscribe(
                 config.stream ? (value: string, flush?: boolean) => {
                     html += value;
@@ -176,14 +176,6 @@ function renderComponent(template: Template, config: RenderServerConfig, next?: 
     } else {
         render(instance.render(), config, next);
     }
-}
-
-function renderInstanceWithCatch(template: Renderable, config: RenderServerConfig, isLastIteration: boolean) {
-
-    return new Observable((next, error, complete) => {
-        render(template, config, isLastIteration ? next : undefined);
-        complete();
-    });
 }
 
 function renderStateless(template: Template, config: RenderServerConfig, next?: Next) {
