@@ -92,11 +92,13 @@ export class Observable<V> {
     }
 }
 
-export function promisify<V = any>(observable: Observable<V>) {
-    return new Promise<V>((resolve, reject) => {
+export function promisify(observable: Observable<string>) {
+    return new Promise<string>((resolve, reject) => {
+        let html = '';
         observable.subscribe(
-            value => resolve(value),
-            error => reject(error)
+            value => (html += value),
+            error => reject(error),
+            () => resolve(html)
         );
     });
 }
