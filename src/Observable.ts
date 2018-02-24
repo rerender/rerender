@@ -67,7 +67,6 @@ export class Observable<V> {
             }
             this.connected = true;
         }
-        return this;
     }
 
     private next(value: V, aditional?: any) {

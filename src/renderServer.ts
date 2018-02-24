@@ -35,13 +35,13 @@ export function renderServer(template: Renderable, config: RenderServerConfig = 
 
             renderIteration(template, { stream, dispatcher }, isLastIteration)
                 .subscribe(
-                    (value: string, flush?: boolean) => {
+                    stream ? (value: string, flush?: boolean) => {
                         html += value;
-                        if (stream && flush) {
+                        if (flush) {
                             next(html, true);
                             html = '';
                         }
-                    },
+                    } : (value: string) => (html += value),
                     e => error(e)
                 );
 
@@ -155,14 +155,14 @@ function renderComponent(template: Template, config: RenderServerConfig, next?: 
         const componentTemplate = instance.render();
         renderInstanceWithCatch(componentTemplate, config, Boolean(next))
             .subscribe(
-                (value: string, flush?: boolean) => {
+                config.stream ? (value: string, flush?: boolean) => {
                     html += value;
                     if (flush && next) {
                         next(html, true);
                         html = '';
                         flushed = true;
                     }
-                },
+                } : (value: string) => (html += value),
                 e => {
                     if (flushed) {
                         throw e;
