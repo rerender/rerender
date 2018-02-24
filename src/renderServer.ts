@@ -10,117 +10,114 @@ import { isValidTag, isValidAttr } from './validate';
 import { noop } from './noop';
 import { disabledAttrs, intrinsicProps, intrinsicPropsWrapper, serverIgnoreAttrTypes } from './constants';
 
-export function renderToString(template: Renderable, config: RenderServerConfig = {}): string {
+export function renderToString(
+    template: Renderable,
+    { dispatcher = { dispatch: noop } }: RenderServerConfig = {}
+): string {
     let html = '';
 
-    render(template, {
-        isLastIteration: true,
-        next: (value: string) => (html += value),
-        // TODO: dispatch
-        dispatch: noop,
-        flush: noop,
-        config: { ...config, stream: false, iterations: 1 }
-    });
+    renderIteration(template, { dispatcher, stream: false, iterations: 1 }, true)
+        .subscribe(
+            (value: string) => (html += value),
+            error => { throw error; }
+        );
 
     return html;
 }
 
 export function renderServer(template: Renderable, config: RenderServerConfig = {}): Observable<string> {
     return new Observable(async (next, error, complete) => {
-        const { iterations = 1} = config;
+        const { iterations = 1, stream, dispatcher = { dispatch: noop } } = config;
+        let html = '';
 
         for (let iteration = 1; iteration <= iterations; iteration++) {
-            let html = '';
             const isLastIteration = iteration === iterations;
 
-            render(template, {
-                isLastIteration,
-                next: (value) => {
-                    html += value;
-                },
-                // TODO: dispatch
-                dispatch: noop,
-                flush: () => {
-                    next(html);
-                    html = '';
-                },
-                config
-            });
+            renderIteration(template, { stream, dispatcher }, isLastIteration)
+                .subscribe(
+                    (value: string, flush?: boolean) => {
+                        html += value;
+                        if (stream && flush) {
+                            next(html, true);
+                            html = '';
+                        }
+                    },
+                    e => error(e)
+                );
 
-            if (isLastIteration) {
-                next(html);
-                complete();
-            } else {
+            if (!isLastIteration) {
                 // TODO: await for all dispatch
             }
         }
-    }, { isAsync: true });
+
+        next(html);
+        complete();
+    });
 }
 
-type Next = (value: string) => any;
+type Next = (value: string, flush?: boolean) => any;
 
-type RenderOptions = {
-    isLastIteration: boolean,
-    next: Next,
-    flush: () => void,
-    config: RenderServerConfig,
-    dispatch: Dispatch
-};
+function renderIteration(template: Renderable, config: RenderServerConfig, isLastIteration: boolean) {
+    return new Observable((next, error, complete) => {
+        render(template, config, isLastIteration ? next : undefined);
+        complete();
+    });
+}
 
-function render(template: Renderable, options: RenderOptions) {
+function render(template: Renderable, config: RenderServerConfig, next?: Next) {
     if (typeof template === 'object') {
         if (template instanceof Template) {
             if (typeof template.componentType === 'string') {
-                renderElement(template, options);
+                renderElement(template, config, next);
             } else if (template.componentType.prototype instanceof Component) {
-                renderComponent(template, options);
+                renderComponent(template, config, next);
             } else if ((template.componentType as StatelessComponent<any>).$uberComponent) {
-                renderUber(template, options);
+                renderUber(template, config, next);
             } else {
-                renderStateless(template, options);
+                renderStateless(template, config, next);
             }
         } else if (template instanceof TemplateFragment) {
             if (Array.isArray(template.children)) {
-                renderArray(template.children, options);
+                renderArray(template.children, config, next);
             } else {
-                render(template, options);
+                render(template, config, next);
             }
         } else if (Array.isArray(template)) {
-            renderArray(template, options);
+            renderArray(template, config, next);
         } else if (template !== null) {
             throw new Error(
                 `Objects are not valid as Rerender child (found: object ${escapeHtml(JSON.stringify(template))}). ` +
                 'If you meant to render a collection of children, use an array instead.'
             );
         }
-    } else if (!options.isLastIteration) {
+    } else if (!next) {
         return;
     } else if (typeof template === 'string') {
-        options.next(escapeHtml(template as string));
+        next(escapeHtml(template as string));
     } else if (typeof template === 'number') {
-        options.next(escapeHtml(String(template)));
+        next(escapeHtml(String(template)));
     }
 }
 
-function renderElement(template: Template, options: RenderOptions) {
-    if (options.isLastIteration) {
+function renderElement(template: Template, config: RenderServerConfig, next?: Next) {
+    if (next) {
         if (!isValidTag(template.componentType as string)) {
             throw new Error(`Name of tag  "${escapeHtml(template.componentType as string)}" is not valid`);
         }
-        const attrs: string = template.props ? getAttrs(template.props, options) : '';
-        options.next('<' + template.componentType + attrs + '>');
+        const attrs: string = template.props ? getAttrs(template.props) : '';
+        next('<' + template.componentType + attrs + '>');
     }
     if (template.children) {
-        renderArray(template.children, options);
-    } else if (template.props && typeof template.props.dangerousInnerHtml === 'string') {
-        options.next(template.props.dangerousInnerHtml);
+        renderArray(template.children, config, next);
+    } else if (next && template.props && typeof template.props.dangerousInnerHtml === 'string') {
+        next(template.props.dangerousInnerHtml);
     }
-    if (options.isLastIteration) {
-        options.next('</' + template.componentType + '>');
+    if (next) {
+        next('</' + template.componentType + '>');
     }
 }
 
-function getAttrs(props: Map<any>, options: RenderOptions) {
+function getAttrs(props: Map<any>) {
     let attrs = '';
 
     for (const name in props) {
@@ -143,7 +140,7 @@ function getAttr(name: string, value: any) {
     return ' ' + name + '="' + escapeHtmlAttr(String(value)) + '"';
 }
 
-function renderComponent(template: Template, options: RenderOptions) {
+function renderComponent(template: Template, config: RenderServerConfig, next?: Next) {
     const componentType = template.componentType as ComponentClass;
     const props = getComponentProps(
         template.props,
@@ -151,65 +148,68 @@ function renderComponent(template: Template, options: RenderOptions) {
         componentType.defaultProps,
         componentType.wrapper ? intrinsicPropsWrapper : intrinsicProps
     );
-    const instance = new componentType(props, options.dispatch);
+    const instance = new componentType(props, (config.dispatcher as any).dispatch);
     if (typeof instance.componentDidCatch === 'function') {
-        renderInstanceWithCatch(instance, options);
-    } else {
-        render(instance.render(), options);
-    }
-}
-
-function renderInstanceWithCatch(instance: Component<any>, options: RenderOptions) {
-    const componentTemplate = instance.render();
-    let flushed = false;
-    try {
+        let flushed = false;
         let html = '';
-        render(componentTemplate, {
-            ...options,
-            next: value => (html += value),
-            flush: () => {
-                if (options.isLastIteration && options.config.stream) {
-                    options.next(html);
-                    options.flush();
-                    flushed = true;
-                    html = '';
-                }
-            },
-        });
-        options.next(html);
-    } catch (e) {
-        if (flushed) {
-            throw e;
-        }
-        (instance.componentDidCatch as Function)(e);
-        render(instance.render(), options);
+        const componentTemplate = instance.render();
+        renderInstanceWithCatch(componentTemplate, config, Boolean(next))
+            .subscribe(
+                (value: string, flush?: boolean) => {
+                    html += value;
+                    if (flush && next) {
+                        next(html, true);
+                        html = '';
+                        flushed = true;
+                    }
+                },
+                e => {
+                    if (flushed) {
+                        throw e;
+                    } else {
+                        (instance.componentDidCatch as Function)(e);
+                        render(instance.render(), config, next);
+                    }
+                },
+                () => next && next(html)
+            );
+    } else {
+        render(instance.render(), config, next);
     }
 }
 
-function renderStateless(template: Template, options: RenderOptions) {
+function renderInstanceWithCatch(template: Renderable, config: RenderServerConfig, isLastIteration: boolean) {
+
+    return new Observable((next, error, complete) => {
+        render(template, config, isLastIteration ? next : undefined);
+        complete();
+    });
+}
+
+function renderStateless(template: Template, config: RenderServerConfig, next?: Next) {
     const componentType = template.componentType as StatelessComponent<any>;
     const props = getComponentProps(template.props, template.children);
-    render(componentType(props), options);
+    render(componentType(props), config, next);
 }
 
-function renderUber(template: Template, options: RenderOptions) {
+function renderUber(template: Template, config: RenderServerConfig, next?: Next) {
     switch (template.componentType) {
         case Flush:
-            if (options.isLastIteration && options.config.stream) {
-                options.flush();
+            if (next && config.stream) {
+                next('', true);
             }
             break;
         case Doctype:
-            if (options.isLastIteration) {
-                options.next('<!DOCTYPE html>');
+            if (next) {
+                next('<!DOCTYPE html>');
             }
             break;
     }
 }
 
-function renderArray(template: Renderable[], options: RenderOptions) {
+function renderArray(template: Renderable[], config: RenderServerConfig, next?: Next) {
     for (let i = 0, l = template.length; i < l; i++) {
-        render(template[i], options);
+        render(template[i], config, next);
     }
 }
 

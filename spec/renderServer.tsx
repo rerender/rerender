@@ -94,11 +94,18 @@ describe('renderToString', () => {
                 }
 
                 return <div class='normal'>
-                    <Buggy />
+                    {this.props.children}
                 </div>;
             }
         }
-        expect(renderToString(<Guard />)).toBe('<div class="error">Sorry, something went wrong: Error!</div>');
+        expect(renderToString(<Guard>text</Guard>))
+            .toBe('<div class="normal">text</div>');
+
+        expect(renderToString(<Guard><Buggy /></Guard>))
+            .toBe('<div class="error">Sorry, something went wrong: Error!</div>');
+
+        expect(renderToString(<Guard><Guard><Buggy /></Guard></Guard>))
+            .toBe('<div class="normal"><div class="error">Sorry, something went wrong: Error!</div></div>');
     });
 
     it('should work dangerousInnerHtml without children', () => {
@@ -129,9 +136,9 @@ describe('renderServer', () => {
         ).subscribe(mock.next, mock.error, mock.complete);
 
         expect(mock.next).toHaveBeenCalledTimes(3);
-        expect(mock.next.calls.argsFor(0)).toEqual(['<div class="container"><div class="header">Header</div>']);
-        expect(mock.next.calls.argsFor(1)).toEqual(['<div class="body">Body</div>']);
-        expect(mock.next.calls.argsFor(2)).toEqual(['<div class="footer">Footer</div></div>']);
+        expect(mock.next.calls.argsFor(0)).toEqual(['<div class="container"><div class="header">Header</div>', true]);
+        expect(mock.next.calls.argsFor(1)).toEqual(['<div class="body">Body</div>', true]);
+        expect(mock.next.calls.argsFor(2)).toEqual(['<div class="footer">Footer</div></div>', undefined]);
         expect(mock.error).not.toHaveBeenCalled();
         expect(mock.complete).toHaveBeenCalledTimes(1);
     });

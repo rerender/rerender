@@ -72,7 +72,11 @@ export type RerenderEvent<State> = {
 
 export type RenderServerConfig = {
     iterations?: number,
-    stream?: boolean
+    stream?: boolean,
+    // FIXME: Dispatcher
+    dispatcher?: {
+        dispatch: Dispatch
+    }
 };
 
 // FIXME: Promise<any> not always Promise actually
