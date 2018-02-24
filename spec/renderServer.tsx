@@ -119,6 +119,30 @@ describe('renderToString', () => {
         expect(renderToString(<script type='text/javascript' dangerousInnerHtml={script}>{'a < b; a && b;'}</script>))
             .toBe('<script type="text/javascript">a &lt; b; a &amp;&amp; b;</script>');
     });
+
+    it('should render namespaced element and attributes', () => {
+        expect(renderToString(
+            <div>
+                {h('svg:svg', {
+                    'version': '1.1',
+                    'baseProfile': 'full',
+                    'xmlns:xlink': 'http://www.w3.org/1999/xlink',
+                    'xmlns:ev': 'http://www.w3.org/2001/xml-events',
+                    'width': '100%',
+                    'height': '100%'
+                },
+                    <rect fill='white' x='0' y='0' width='100%' height='100%' />,
+                    <rect fill='silver' x='0' y='0' width='100%' height='100%' rx='1em'/>
+                )}
+            </div>
+        )).toBe('<div><svg:svg version="1.1" baseProfile="full" ' +
+            'xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:ev="http://www.w3.org/2001/xml-events" ' +
+            'width="100%" height="100%">' +
+                '<rect fill="white" x="0" y="0" width="100%" height="100%"></rect>' +
+                '<rect fill="silver" x="0" y="0" width="100%" height="100%" rx="1em"></rect>' +
+            '</svg:svg></div>'
+        );
+    });
 });
 
 describe('renderServer', () => {
