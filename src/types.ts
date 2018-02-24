@@ -11,7 +11,7 @@ export interface StatelessComponent<Props extends {
     [prop: string]: any,
     children?: PropsChildren
 }, PropsChildren = Children> {
-    // FIXME: must be Renderable, not any
+    // FIXME: must be Renderable, not any (now any for correct jsx support in typescript)
     (props: Props & { children?: PropsChildren }): any;
     displayName?: string;
     $uberComponent?: boolean;

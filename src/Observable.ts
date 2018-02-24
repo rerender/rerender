@@ -91,3 +91,12 @@ export class Observable<V> {
         this.stopped = true;
     }
 }
+
+export function promisify<V = any>(observable: Observable<V>) {
+    return new Promise<V>((resolve, reject) => {
+        observable.subscribe(
+            value => resolve(value),
+            error => reject(error)
+        );
+    });
+}
