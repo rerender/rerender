@@ -5,3 +5,4 @@ export { Doctype } from './uberComponents';
 export { Fragment } from './Fragment';
 export { StatelessComponent, ComponentClass, Renderable } from './types';
 export { renderToString, renderServer } from './renderServer';
+export { concatStyle } from './concatStyle';

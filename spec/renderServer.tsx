@@ -124,8 +124,6 @@ describe('renderToString', () => {
         expect(renderToString(
             <div>
                 {h('svg:svg', {
-                    'version': '1.1',
-                    'baseProfile': 'full',
                     'xmlns:xlink': 'http://www.w3.org/1999/xlink',
                     'xmlns:ev': 'http://www.w3.org/2001/xml-events',
                     'width': '100%',
@@ -135,9 +133,13 @@ describe('renderToString', () => {
                     <rect fill='silver' x='0' y='0' width='100%' height='100%' rx='1em'/>
                 )}
             </div>
-        )).toBe('<div><svg:svg version="1.1" baseProfile="full" ' +
-            'xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:ev="http://www.w3.org/2001/xml-events" ' +
-            'width="100%" height="100%">' +
+        )).toBe(
+            '<div><svg:svg ' +
+                'xmlns:xlink="http://www.w3.org/1999/xlink" ' +
+                'xmlns:ev="http://www.w3.org/2001/xml-events" ' +
+                'width="100%" ' +
+                'height="100%"' +
+            '>' +
                 '<rect fill="white" x="0" y="0" width="100%" height="100%"></rect>' +
                 '<rect fill="silver" x="0" y="0" width="100%" height="100%" rx="1em"></rect>' +
             '</svg:svg></div>'
