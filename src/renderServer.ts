@@ -230,8 +230,7 @@ function getComponentProps(
 
     if (Array.isArray(children)) {
         if (children.length > 1) {
-            // TODO: no need TemplateFragment here on server?
-            componentProps.children = new TemplateFragment(children);
+            componentProps.children = children;
         } else {
             componentProps.children = children[0];
         }
