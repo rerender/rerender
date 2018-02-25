@@ -79,6 +79,11 @@ export type RenderServerConfig = {
     }
 };
 
+export type RenderDOMConfig = {
+    domNode?: HTMLElement,
+    window?: Window
+};
+
 // FIXME: Promise<any> not always Promise actually
 export type Dispatch = (event: RerenderEvent<any>, payload: any) => Promise<any>;
 
