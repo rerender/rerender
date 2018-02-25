@@ -10,21 +10,6 @@ import { isValidTag, isValidAttr } from './validate';
 import { noop } from './noop';
 import { disabledAttrs, intrinsicProps, intrinsicPropsWrapper, serverIgnoreAttrTypes } from './constants';
 
-export function renderToString(
-    template: Renderable,
-    { dispatcher = { dispatch: noop } }: RenderServerConfig = {}
-): string {
-    let html = '';
-
-    renderTree(template, { dispatcher, stream: false, iterations: 1 }, true)
-        .subscribe(
-            (value: string) => (html += value),
-            error => { throw error; }
-        );
-
-    return html;
-}
-
 export function renderServer(template: Renderable, config: RenderServerConfig = {}): Observable<string> {
     return new Observable(async (next, error, complete) => {
         const { iterations = 1, stream, dispatcher = { dispatch: noop } } = config;
@@ -57,7 +42,7 @@ export function renderServer(template: Renderable, config: RenderServerConfig = 
 
 type Next = (value: string, flush?: boolean) => any;
 
-function renderTree(template: Renderable, config: RenderServerConfig, isLastIteration: boolean) {
+export function renderTree(template: Renderable, config: RenderServerConfig, isLastIteration: boolean) {
     return new Observable((next, error, complete) => {
         render(template, config, isLastIteration ? next : undefined);
         complete();

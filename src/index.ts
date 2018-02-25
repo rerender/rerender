@@ -4,5 +4,6 @@ export { Observable, promisify } from './Observable';
 export { Doctype } from './uberComponents';
 export { Fragment } from './Fragment';
 export { StatelessComponent, ComponentClass, Renderable } from './types';
-export { renderToString, renderServer } from './renderServer';
+export { renderServer } from './renderServer';
+export { renderToString } from './renderToString';
 export { concatStyle } from './concatStyle';

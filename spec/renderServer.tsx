@@ -2,7 +2,8 @@
 import { h, Component } from '../src/';
 import { Flush } from '../src/uberComponents';
 import { StatelessComponent } from '../src/types';
-import { renderToString, renderServer } from '../src/renderServer';
+import { renderServer } from '../src/renderServer';
+import { renderToString } from '../src/renderToString';
 import { Fragment } from '../src/Fragment';
 import { Doctype } from '../src/uberComponents';
 import { concatStyle } from '../src/concatStyle';
