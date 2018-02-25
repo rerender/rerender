@@ -54,7 +54,9 @@ function render(template: Renderable, config: RenderServerConfig, next?: Next) {
         if (template instanceof Template) {
             if (typeof template.componentType === 'string') {
                 renderElement(template, config, next);
-            } else if (typeof template.componentType.prototype.render === 'function') {
+            } else if (template.componentType.prototype &&
+                typeof template.componentType.prototype.render === 'function') {
+
                 renderComponent(template, config, next);
             } else if ((template.componentType as StatelessComponent<any>).$uberComponent) {
                 renderUber(template, config, next);
