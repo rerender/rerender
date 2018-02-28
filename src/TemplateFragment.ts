@@ -1,5 +1,5 @@
-import { Children } from './types';
+import { Renderable } from './types';
 
 export class TemplateFragment {
-    constructor(public children: Children) {}
+    constructor(public children: Renderable) {}
 }

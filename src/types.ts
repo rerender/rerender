@@ -10,7 +10,7 @@ export interface Map<T> {
 export interface StatelessComponent<Props extends {
     [prop: string]: any,
     children?: PropsChildren
-}, PropsChildren = Children> {
+}, PropsChildren = Renderable> {
     // FIXME: must be Renderable, not any (now any for correct jsx support in typescript)
     (props: Props & { children?: PropsChildren }): any;
     displayName?: string;
@@ -30,8 +30,6 @@ export type Renderable =
 
 export interface RenderableArray extends Array<Renderable> {}
 
-export type Children = Renderable | RenderableArray;
-
 export type Controller = (Wrapped: ComponentClass) => WrapperClass;
 
 export interface ComponentClass<C extends Component<any> = Component<any>> {
@@ -46,7 +44,7 @@ export type WrapperClass<C extends Component<any> = Component<any>> = {
     wrapper: true
 } & ComponentClass<C>;
 
-export type ComponentType = string | ComponentClass | StatelessComponent<any>;
+export type ComponentType = string | ComponentClass<Component<any, any, any, any>> | StatelessComponent<any, any>;
 
 export type Path = Array<string | number>;
 

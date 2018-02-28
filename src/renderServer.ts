@@ -78,16 +78,16 @@ function render(template: Renderable, config: RenderServerConfig, next?: Next) {
     } else if (!next) {
         return;
     } else if (typeof template === 'string') {
-        next(escapeHtml(template as string));
+        next(escapeHtml(template));
     } else if (typeof template === 'number') {
         next(escapeHtml(String(template)));
     }
 }
 
-function renderElement(template: Template, config: RenderServerConfig, next?: Next) {
+function renderElement(template: Template<string>, config: RenderServerConfig, next?: Next) {
     if (next) {
-        if (!isValidTag(template.componentType as string)) {
-            throw new Error(`Name of tag  "${escapeHtml(template.componentType as string)}" is not valid`);
+        if (!isValidTag(template.componentType)) {
+            throw new Error(`Name of tag  "${escapeHtml(template.componentType)}" is not valid`);
         }
         const attrs: string = template.props ? getAttrs(template.props) : '';
         next('<' + template.componentType + attrs + '>');
@@ -125,8 +125,8 @@ function getAttr(name: string, value: any) {
     return ' ' + name + '="' + escapeHtmlAttr(String(value)) + '"';
 }
 
-function renderComponent(template: Template, config: RenderServerConfig, next?: Next) {
-    const componentType = template.componentType as ComponentClass;
+function renderComponent(template: Template<ComponentClass>, config: RenderServerConfig, next?: Next) {
+    const componentType = template.componentType;
     const props = getComponentProps(
         template.props,
         template.children,
@@ -163,8 +163,8 @@ function renderComponent(template: Template, config: RenderServerConfig, next?: 
     }
 }
 
-function renderStateless(template: Template, config: RenderServerConfig, next?: Next) {
-    const componentType = template.componentType as StatelessComponent<any>;
+function renderStateless(template: Template<StatelessComponent<any>>, config: RenderServerConfig, next?: Next) {
+    const componentType = template.componentType;
     const props = getComponentProps(template.props, template.children);
     render(componentType(props), config, next);
 }

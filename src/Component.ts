@@ -1,6 +1,5 @@
 import {
     Map,
-    Children,
     Renderable,
     Path,
     Dispatch
@@ -15,7 +14,7 @@ export abstract class Component<
     },
     State = void,
     Defaults extends Partial<Props> = {},
-    PropsChildren = Children
+    PropsChildren = Renderable
 > {
     public $externalProps?: Props; // For correct defaultProps typescript support only
 
