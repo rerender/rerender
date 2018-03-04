@@ -145,12 +145,29 @@ function render(
             }
         } else if (nextTemplate instanceof TemplateFragment) {
             if (Array.isArray(nextTemplate.children)) {
-                // renderArray(nextTemplate.children, prevTemplate && prevTemplate.children, context, nodesById);
+                renderArray(
+                    nextTemplate.children,
+                    prevTemplate && (prevTemplate as any).children,
+                    domContext,
+                    patchContext,
+                    options,
+                    next,
+                    error,
+                    true
+                );
             } else {
-                // render(nextTemplate.children, prevTemplate && prevTemplate.children, context, nodesById);
+                render(
+                    nextTemplate.children,
+                    prevTemplate && (prevTemplate as any).children,
+                    domContext,
+                    patchContext,
+                    options,
+                    next,
+                    error
+                );
             }
         } else if (Array.isArray(nextTemplate)) {
-            // renderArray(nextTemplate, prevTemplate, context, nodesById);
+            renderArray(nextTemplate, prevTemplate, domContext, patchContext, options, next, error);
         } else if (nextTemplate !== null) {
             error(new Error(
                 'Objects are not valid as Rerender child ' +
@@ -160,7 +177,7 @@ function render(
             return;
         }
     } else if (typeof nextTemplate === 'string') {
-        // renderString(nextTemplate, prevTemplate, context, nodesById);
+        renderString(nextTemplate, prevTemplate, domContext, patchContext, options, next, error);
     } else if (typeof nextTemplate === 'number') {
         // renderNumber(nextTemplate, prevTemplate, context, nodesById);
     }
@@ -190,7 +207,7 @@ function renderElement(
             domContext.nextDomIndex++;
             if (nextTemplate.children) {
                 renderArray(
-                    nextTemplate,
+                    nextTemplate.children,
                     undefined,
                     { nextDomIndex: 0 },
                     {
@@ -199,7 +216,8 @@ function renderElement(
                     },
                     options,
                     next,
-                    error
+                    error,
+                    true
                 );
             }
             break;
@@ -213,8 +231,8 @@ function renderElement(
     }
 }
 
-function renderArray(
-    nextTemplate: Template<string>,
+function renderString(
+    nextTemplate: string,
     prevTemplate: Renderable,
     domContext: DOMContext,
     patchContext: PatchContext,
@@ -222,7 +240,20 @@ function renderArray(
     next: Next,
     error: ErrorSignature
 ) {
+    switch (patchContext.insidePatchType) {
+        case 'create': {
+            const nextDomNode = options.document.createTextNode(nextTemplate);
+            patchContext.parentDomNode.appendChild(nextDomNode);
+            domContext.nextDomIndex++;
+            break;
+        }
 
+        case 'move':
+            // TODO move
+        case undefined:
+            // TODO update
+            break;
+    }
 }
 
 function setAttrs(domNode: HTMLElement, props: Map<any>, error: ErrorSignature) {
@@ -247,6 +278,34 @@ const noRenderTypes: Map<boolean> = {
     undefined: true,
     function: true
 };
+
+function renderArray(
+    nextTemplate: Renderable[],
+    prevTemplate: Renderable,
+    domContext: DOMContext,
+    patchContext: PatchContext,
+    options: RenderDOMOptions,
+    next: Next,
+    error: ErrorSignature,
+    noNeedKeys?: boolean
+) {
+    const isPrevArray = Array.isArray(prevTemplate);
+
+    for (let i = 0, l = nextTemplate.length; i < l; i++) {
+        render(
+            nextTemplate[i],
+            isPrevArray ? (prevTemplate as Renderable[])[i] : undefined,
+            domContext,
+            {
+                ...patchContext,
+                id: getId(nextTemplate[i], patchContext.id, i, !noNeedKeys)
+            },
+            options,
+            next,
+            error
+        );
+    }
+}
 
 function isNothing(template: Renderable) {
     return template === null || noRenderTypes[typeof template];
@@ -279,6 +338,23 @@ const enabledKeysTypes: Map<boolean> = {
 function isMovable(template: Renderable) {
     return template instanceof Template &&  template.props != null &&
         (enabledKeysTypes[typeof template.props.uniqid] || enabledKeysTypes[typeof template.props.uniqid]);
+}
+
+function getId(template: Renderable, parentId: string, index: number, needKey: boolean): string {
+    if (isMovable(template)) {
+        const props = (template as any).props;
+        if (props.uniqid !== undefined) {
+            return 'u' + props.uniqid;
+        } else {
+            return parentId + '.k' + props.key;
+        }
+    } else {
+        if (needKey && template instanceof Template) {
+            console.warn('Each child in an array ' + // tslint:disable-line:no-console
+                'should have a unique "key" or "uniqid" prop');
+        }
+        return parentId + '.' + index;
+    }
 }
 
 // if (nextTemplate != null) {

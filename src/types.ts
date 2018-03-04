@@ -97,6 +97,8 @@ export type MovableNode = {
 
 export type ComponentNode = {
     component?: Component<any>,
+    parentDomNode: DOMNode,
+    nextDomIndex: number,
     parentComponent?: Component<any>,
     props: any,
     state?: any,

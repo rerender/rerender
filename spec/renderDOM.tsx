@@ -20,4 +20,9 @@ describe('renderDOM', () => {
         renderDOM(<div class='block' />, renderDOMConfig);
         expect(window.document.body.innerHTML).toBe('<div class="block"></div>');
     });
+
+    it('should render div with children', () => {
+        renderDOM(<div class='block'>text of div</div>, renderDOMConfig);
+        expect(window.document.body.innerHTML).toBe('<div class="block">text of div</div>');
+    });
 });
