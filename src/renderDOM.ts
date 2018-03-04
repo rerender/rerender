@@ -179,7 +179,7 @@ function render(
     } else if (typeof nextTemplate === 'string') {
         renderString(nextTemplate, prevTemplate, domContext, patchContext, options, next, error);
     } else if (typeof nextTemplate === 'number') {
-        // renderNumber(nextTemplate, prevTemplate, context, nodesById);
+        renderString(String(nextTemplate), prevTemplate, domContext, patchContext, options, next, error);
     }
 }
 
