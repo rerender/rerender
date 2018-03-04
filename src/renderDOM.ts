@@ -48,6 +48,7 @@ export function renderDOM(
         dispatcher: {
             dispatch: noop
         },
+        document: window.document,
         templatesById,
         domNodesById,
         componentsById
@@ -111,7 +112,7 @@ function render(
                     if (isMovable(nextTemplate) && isSameType(nextTemplate, options.templatesById[patchContext.id])) {
                         // move
                     } else {
-                        const nextParentDomNode = document.createDocumentFragment();
+                        const nextParentDomNode = options.document.createDocumentFragment();
 
                         next({
                             type: 'create',
@@ -181,7 +182,7 @@ function renderElement(
 
     switch (patchContext.insidePatchType) {
         case 'create': {
-            const nextDomNode = document.createElement(nextTemplate.componentType);
+            const nextDomNode = options.document.createElement(nextTemplate.componentType);
             if (nextTemplate.props) {
                 setAttrs(nextDomNode, nextTemplate.props, error);
             }

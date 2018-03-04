@@ -108,6 +108,7 @@ export type RenderDOMOptions = {
     dispatcher: {
         dispatch: Dispatch
     },
+    document: Document,
     templatesById: Map<Template>,
     domNodesById: Map<DOMNode>,
     componentsById: Map<ComponentNode>

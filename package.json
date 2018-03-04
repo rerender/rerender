@@ -39,7 +39,7 @@
   },
   "devDependencies": {
     "@types/jasmine": "^2.6.0",
-    "@types/jsdom": "^11.0.4"
+    "@types/jsdom": "^11.0.4",
     "jasmine-ts": "^0.2.1",
     "jsdom": "^11.6.2",
     "nyc": "^11.4.1",
