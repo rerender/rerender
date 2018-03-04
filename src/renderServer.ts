@@ -8,6 +8,7 @@ import { escapeHtml } from './escapeHtml';
 import { escapeHtmlAttr } from './escapeHtmlAttr';
 import { isValidTag, isValidAttr } from './validate';
 import { noop } from './noop';
+import { getComponentProps } from './getComponentProps';
 import { disabledAttrs, intrinsicProps, intrinsicPropsWrapper, serverIgnoreAttrTypes } from './constants';
 
 export function renderServer(template: Renderable, config: RenderServerConfig = {}): Observable<string> {
@@ -188,40 +189,4 @@ function renderArray(template: Renderable[], config: RenderServerConfig, next?: 
     for (let i = 0, l = template.length; i < l; i++) {
         render(template[i], config, next);
     }
-}
-
-function getComponentProps(
-    props: Map<any> | null | undefined,
-    children: Renderable[] | undefined,
-    defaultProps?: Map<any>,
-    intrinsic: Map<any> = intrinsicProps
-): Map<any> {
-    const componentProps: Map<any> = Object.keys(props || {})
-        .reduce((memo: Map<any>, key) => {
-            if (!intrinsic[key]) {
-                memo[key] = (props as Map<any>)[key];
-            }
-
-            return memo;
-        }, {});
-
-    if (Array.isArray(children)) {
-        if (children.length > 1) {
-            componentProps.children = children;
-        } else {
-            componentProps.children = children[0];
-        }
-    } else {
-        componentProps.children = children;
-    }
-
-    if (defaultProps) {
-        for (const name in defaultProps) {
-            if (componentProps[name] === undefined) {
-                componentProps[name] = defaultProps[name];
-            }
-        }
-    }
-
-    return componentProps;
 }

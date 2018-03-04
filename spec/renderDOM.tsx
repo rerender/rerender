@@ -25,4 +25,28 @@ describe('renderDOM', () => {
         renderDOM(<div class='block'>text of div</div>, renderDOMConfig);
         expect(window.document.body.innerHTML).toBe('<div class="block">text of div</div>');
     });
+
+    it('should render Component', () => {
+        type Props = {
+            id: string
+        };
+
+        class Block extends Component<Props> {
+            render() {
+                const { children, id } = this.props;
+
+                return <div class='block' id={id}>
+                    <input checked value={'some value'} />
+                    {children}
+                </div>;
+            }
+        }
+
+        renderDOM(<Block id='id1'>some text</Block>, renderDOMConfig);
+        const input: any = window.document.querySelector('input');
+        expect(window.document.body.innerHTML)
+            .toBe('<div class="block" id="id1"><input>some text</div>');
+        expect(input.value).toBe('some value');
+        expect(input.checked).toBe(true);
+    });
 });

@@ -12,7 +12,7 @@ import {
     RenderDOMConfig,
     StatelessComponent
 } from './types';
-import { disabledAttrs, mapJsAttrs } from './constants';
+import { disabledAttrs, mapJsAttrs, intrinsicProps, intrinsicPropsWrapper } from './constants';
 import { applyPatches } from './applyPatches';
 import { noop } from './noop';
 import { shallowEqualProps } from './shallowEqualProps';
@@ -21,9 +21,10 @@ import { Channel } from './Channel';
 import { Observable } from './Observable';
 import { Template } from './Template';
 import { TemplateFragment } from './TemplateFragment';
+import { getComponentProps } from './getComponentProps';
 import { isValidTag, isValidAttr } from './validate';
 
-type Next = (patch: Patch) => any;
+type Next = (patch: Patch | Patch[]) => any;
 type ErrorSignature = (error: Error) => any;
 
 export function renderDOM(
@@ -32,7 +33,7 @@ export function renderDOM(
 ) {
     const channel = new Channel();
     const patchContext = {
-        id: 'r0',
+        id: getId(template, 'r', 0, false),
         parentDomNode: domNode
     };
     const domContext = {
@@ -137,7 +138,7 @@ function render(
             if (typeof nextTemplate.componentType === 'string') {
                 renderElement(nextTemplate, prevTemplate, domContext, patchContext, options, next, error);
             } else if (nextTemplate.componentType.prototype instanceof Component) {
-                // renderComponent(nextTemplate, prevTemplate, context, nodesById);
+                renderComponent(nextTemplate, prevTemplate, domContext, patchContext, options, next, error);
             } else if ((nextTemplate.componentType as StatelessComponent<any>).$uberComponent) {
                 // renderUber(nextTemplate, prevTemplate, context, nodesById);
             } else {
@@ -181,6 +182,60 @@ function render(
     } else if (typeof nextTemplate === 'number') {
         renderString(String(nextTemplate), prevTemplate, domContext, patchContext, options, next, error);
     }
+}
+
+function renderComponent(
+    nextTemplate: Template<ComponentClass>,
+    prevTemplate: Renderable,
+    domContext: DOMContext,
+    patchContext: PatchContext,
+    options: RenderDOMOptions,
+    next: Next,
+    error: ErrorSignature
+) {
+    const componentType = nextTemplate.componentType;
+    const props = getComponentProps(
+        nextTemplate.props,
+        nextTemplate.children,
+        componentType.defaultProps,
+        componentType.wrapper ? intrinsicPropsWrapper : intrinsicProps
+    );
+
+    switch (patchContext.insidePatchType) {
+        case 'create': {
+            const instance = new componentType(props, options.dispatcher.dispatch);
+            const nextPatchContext = {
+                ...patchContext,
+                parentComponent: instance,
+                id: patchContext.id + '.0'
+            };
+            if (typeof instance.componentDidCatch === 'function') {
+                const componentTemplate = instance.render();
+                const patches: Patch[] = [];
+                renderTree(componentTemplate, undefined, domContext, nextPatchContext, options)
+                    .subscribe(
+                        (patch: Patch | Patch[]) => Array.isArray(patch)
+                            ? patches.push(...patch)
+                            : patches.push(patch),
+                        (e: Error) => {
+                            (instance.componentDidCatch as Function)(e);
+                            render(instance.render(), undefined, domContext, nextPatchContext, options, next, error);
+                        },
+                        () => next(patches)
+                    );
+            } else {
+                render(instance.render(), undefined, domContext, nextPatchContext, options, next, error);
+            }
+            break;
+        }
+        case 'move': {
+            break;
+        }
+        case undefined: {
+            break;
+        }
+    }
+
 }
 
 function renderElement(
@@ -231,6 +286,23 @@ function renderElement(
     }
 }
 
+function setAttrs(domNode: HTMLElement, props: Map<any>, error: ErrorSignature) {
+    for (const name in props) {
+        if (!disabledAttrs[name]) {
+            if (!isValidAttr(name)) {
+                error(new Error(`attribute "${name}" is not valid`));
+                return;
+            }
+            const jsName = mapJsAttrs[name];
+            if (jsName) {
+                (domNode as any)[jsName] = props[name];
+            } else {
+                domNode.setAttribute(name, props[name]);
+            }
+        }
+    }
+}
+
 function renderString(
     nextTemplate: string,
     prevTemplate: Renderable,
@@ -253,23 +325,6 @@ function renderString(
         case undefined:
             // TODO update
             break;
-    }
-}
-
-function setAttrs(domNode: HTMLElement, props: Map<any>, error: ErrorSignature) {
-    for (const name in props) {
-        if (!disabledAttrs[name]) {
-            if (!isValidAttr(name)) {
-                error(new Error(`attribute "${name}" is not valid`));
-                return;
-            }
-            const jsName = mapJsAttrs[name];
-            if (jsName) {
-                (domNode as any)[jsName] = props[name];
-            } else {
-                domNode.setAttribute(name, props[name]);
-            }
-        }
     }
 }
 
