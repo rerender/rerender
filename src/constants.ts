@@ -23,6 +23,15 @@ export const disabledAttrs: Map<boolean> = {
     dangerousInnerHtml: true
 };
 
+// TODO: fill list
+export const mapJsAttrs: Map<string> = {
+    class: 'className',
+    id: 'id',
+    value: 'value',
+    checked: 'checked',
+    style: 'style'
+};
+
 export const serverIgnoreAttrTypes: Map<boolean> = {
     function: true,
     undefined: true
