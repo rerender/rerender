@@ -124,9 +124,9 @@ export type PatchCreate = {
     tryReuseDOM?: boolean,
     domIndex: number,
     domNode: HTMLElement | DocumentFragment,
-    templatesById?: Map<Template>,
-    domNodesById?: Map<DOMNode>,
-    componentsById?: Map<ComponentNode>
+    templatesById: Map<Template>,
+    domNodesById: Map<DOMNode>,
+    componentsById: Map<ComponentNode>
 };
 
 export type PatchMove = {
@@ -163,7 +163,7 @@ export type PatchContext = {
     id: string,
     parentDomNode: DOMNode | DocumentFragment,
     parentComponent?: Component<any>,
-    insidePatchType?: 'create' | 'move' | 'remove'
+    currentPatch?: Patch
 };
 
 declare global {

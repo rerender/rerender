@@ -97,7 +97,7 @@ function render(
     next: Next,
     error: ErrorSignature
 ) {
-    switch (patchContext.insidePatchType) {
+    switch (patchContext.currentPatch && patchContext.currentPatch.type) {
         case 'create':
             if (!isNothing(nextTemplate) &&
                 isMovable(nextTemplate) && isSameType(nextTemplate, options.templatesById[patchContext.id])) {
@@ -115,17 +115,20 @@ function render(
                     } else {
                         const nextParentDomNode = options.document.createDocumentFragment();
 
-                        next({
+                        const patch: Patch = {
                             type: 'create',
                             parentDomNode: patchContext.parentDomNode as HTMLElement,
                             domIndex: domContext.nextDomIndex,
-                            domNode: nextParentDomNode
-                        });
-
+                            domNode: nextParentDomNode,
+                            templatesById: {},
+                            domNodesById: {},
+                            componentsById: {}
+                        };
+                        next(patch);
                         patchContext = {
                             ...patchContext,
                             parentDomNode: nextParentDomNode,
-                            insidePatchType: 'create'
+                            currentPatch: patch
                         };
                     }
                 }
@@ -201,7 +204,7 @@ function renderComponent(
         componentType.wrapper ? intrinsicPropsWrapper : intrinsicProps
     );
 
-    switch (patchContext.insidePatchType) {
+    switch (patchContext.currentPatch && patchContext.currentPatch.type) {
         case 'create': {
             const instance = new componentType(props, options.dispatcher.dispatch);
             const nextPatchContext = {
@@ -252,7 +255,7 @@ function renderElement(
         return;
     }
 
-    switch (patchContext.insidePatchType) {
+    switch (patchContext.currentPatch && patchContext.currentPatch.type) {
         case 'create': {
             const nextDomNode = options.document.createElement(nextTemplate.componentType);
             if (nextTemplate.props) {
@@ -312,7 +315,7 @@ function renderString(
     next: Next,
     error: ErrorSignature
 ) {
-    switch (patchContext.insidePatchType) {
+    switch (patchContext.currentPatch && patchContext.currentPatch.type) {
         case 'create': {
             const nextDomNode = options.document.createTextNode(nextTemplate);
             patchContext.parentDomNode.appendChild(nextDomNode);
