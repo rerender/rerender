@@ -88,21 +88,16 @@ export type Dispatch = (event: RerenderEvent<any>, payload: any) => Promise<any>
 
 export type Key = string | number;
 
-export type DOMNode = HTMLElement | Document;
-
-export type MovableNode = {
-    domNode: HTMLElement,
-    template: Template<string>
-};
+export type DOMNode = HTMLElement | Document | Text;
 
 export type ComponentNode = {
-    component?: Component<any>,
-    parentDomNode: DOMNode,
-    nextDomIndex: number,
-    parentComponent?: Component<any>,
     props: any,
+    tree: Renderable,
+    parentDomNode: DOMNode, // may help for replace and move if component return many root domNodes
+    nextDomIndex: number, // for same purposes as previous
+    instance?: Component<any>,
     state?: any,
-    tree: Renderable
+    parentComponent?: Component<any>
 };
 
 export type RenderDOMOptions = {
@@ -111,9 +106,9 @@ export type RenderDOMOptions = {
         dispatch: Dispatch
     },
     document: Document,
-    templatesById: Map<Template>,
-    domNodesById: Map<DOMNode>,
-    componentsById: Map<ComponentNode>
+    templatesById: Map<Template>, // only movable
+    domNodesById: Map<DOMNode>, // all DOM nodes
+    componentsById: Map<ComponentNode> // all components with state and stateless
 };
 
 export type Patch = PatchCreate | PatchMove | PatchRemove | PatchUpdate;

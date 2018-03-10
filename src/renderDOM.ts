@@ -6,6 +6,7 @@ import {
     Map,
     ComponentNode,
     Patch,
+    PatchCreate,
     PatchContext,
     Renderable,
     RenderDOMOptions,
@@ -76,16 +77,6 @@ function renderTree(
         render(nextTemplate, prevTemplate, domContext, patchContext, options, next, error);
         complete();
     });
-}
-
-function getPatchType(
-    nextTemplate: Renderable,
-    prevTemplate: Renderable,
-    domContext: DOMContext,
-    patchContext: PatchContext,
-    options: RenderDOMOptions
-) {
-
 }
 
 function render(
@@ -263,6 +254,7 @@ function renderElement(
             }
             patchContext.parentDomNode.appendChild(nextDomNode);
             domContext.nextDomIndex++;
+            (patchContext.currentPatch as PatchCreate).domNodesById[patchContext.id] = nextDomNode;
             if (nextTemplate.children) {
                 renderArray(
                     nextTemplate.children,
@@ -320,6 +312,7 @@ function renderString(
             const nextDomNode = options.document.createTextNode(nextTemplate);
             patchContext.parentDomNode.appendChild(nextDomNode);
             domContext.nextDomIndex++;
+            (patchContext.currentPatch as PatchCreate).domNodesById[patchContext.id] = nextDomNode;
             break;
         }
 
@@ -330,12 +323,6 @@ function renderString(
             break;
     }
 }
-
-const noRenderTypes: Map<boolean> = {
-    boolean: true,
-    undefined: true,
-    function: true
-};
 
 function renderArray(
     nextTemplate: Renderable[],
@@ -364,6 +351,12 @@ function renderArray(
         );
     }
 }
+
+const noRenderTypes: Map<boolean> = {
+    boolean: true,
+    undefined: true,
+    function: true
+};
 
 function isNothing(template: Renderable) {
     return template === null || noRenderTypes[typeof template];
