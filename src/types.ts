@@ -116,7 +116,7 @@ export type Patch = PatchCreate | PatchMove | PatchRemove | PatchUpdate;
 export type PatchCreate = {
     type: 'create',
     parentDomNode: DOMNode,
-    tryReuseDOM?: boolean,
+    hydrate?: boolean,
     domIndex: number,
     domNode: HTMLElement | DocumentFragment,
     templatesById: Map<Template>,
@@ -148,17 +148,6 @@ export type PatchUpdate = {
     removeProps: Map<true>,
     templatesById: Map<Template>,
     domNodesById: Map<DOMNode>
-};
-
-export type DOMContext = {
-    nextDomIndex: number,
-};
-
-export type PatchContext = {
-    id: string,
-    parentDomNode: DOMNode | DocumentFragment,
-    parentComponent?: Component<any>,
-    currentPatch?: Patch
 };
 
 declare global {

@@ -1,18 +1,17 @@
 import {
     ComponentClass,
-    DOMContext,
     DOMNode,
     Dispatch,
     Map,
     ComponentNode,
     Patch,
     PatchCreate,
-    PatchContext,
     Renderable,
-    RenderDOMOptions,
+    RenderDOMOptions as Options,
     RenderDOMConfig,
     StatelessComponent
 } from './types';
+import { Context } from './Context';
 import { disabledAttrs, mapJsAttrs, intrinsicProps, intrinsicPropsWrapper } from './constants';
 import { applyPatches } from './applyPatches';
 import { noop } from './noop';
@@ -33,19 +32,17 @@ export function renderDOM(
     { window, domNode = window.document }: RenderDOMConfig = {}
 ) {
     const channel = new Channel();
-    const patchContext = {
-        id: getId(template, 'r', 0, false),
-        parentDomNode: domNode
-    };
-    const domContext = {
-        nextDomIndex: 0
-    };
+    const context = new Context(
+        getId(template, 'r', 0, false),
+        domNode,
+        { index: 0 }
+    );
     const patches: Patch[] = [];
     const templatesById: Map<Template> = {};
     const domNodesById: Map<DOMNode> = {};
     const componentsById: Map<ComponentNode> = {};
 
-    const options: RenderDOMOptions = {
+    const options: Options = {
         channel,
         dispatcher: {
             dispatch: noop
@@ -56,7 +53,7 @@ export function renderDOM(
         componentsById
     };
 
-    renderTree(template, undefined, domContext, patchContext, options)
+    renderTree(template, undefined, context, options)
         .subscribe(
             (patch: Patch | Patch[]) => Array.isArray(patch)
                 ? patches.push(...patch)
@@ -66,32 +63,18 @@ export function renderDOM(
         );
 }
 
-function renderTree(
-    nextTemplate: Renderable,
-    prevTemplate: Renderable,
-    domContext: DOMContext,
-    patchContext: PatchContext,
-    options: RenderDOMOptions
-) {
+function renderTree(nextTemplate: Renderable, prevTemplate: Renderable, context: Context, options: Options) {
     return new Observable<Patch>((next, error, complete) => {
-        render(nextTemplate, prevTemplate, domContext, patchContext, options, next, error);
+        render(nextTemplate, prevTemplate, context.cloneBy({ next, error }), options);
         complete();
     });
 }
 
-function render(
-    nextTemplate: Renderable,
-    prevTemplate: Renderable,
-    domContext: DOMContext,
-    patchContext: PatchContext,
-    options: RenderDOMOptions,
-    next: Next,
-    error: ErrorSignature
-) {
-    switch (patchContext.currentPatch && patchContext.currentPatch.type) {
+function render(nextTemplate: Renderable, prevTemplate: Renderable, context: Context, options: Options) {
+    switch (context.currentPatch && context.currentPatch.type) {
         case 'create':
             if (!isNothing(nextTemplate) &&
-                isMovable(nextTemplate) && isSameType(nextTemplate, options.templatesById[patchContext.id])) {
+                isMovable(nextTemplate) && isSameType(nextTemplate, options.templatesById[context.id])) {
 
                 // move
             }
@@ -101,26 +84,25 @@ function render(
             if (!isSameType(nextTemplate, prevTemplate)) {
                 // remove prev
                 if (!isNothing(nextTemplate)) {
-                    if (isMovable(nextTemplate) && isSameType(nextTemplate, options.templatesById[patchContext.id])) {
+                    if (isMovable(nextTemplate) && isSameType(nextTemplate, options.templatesById[context.id])) {
                         // move
                     } else {
                         const nextParentDomNode = options.document.createDocumentFragment();
 
                         const patch: Patch = {
                             type: 'create',
-                            parentDomNode: patchContext.parentDomNode as HTMLElement,
-                            domIndex: domContext.nextDomIndex,
+                            parentDomNode: context.parentDomNode as HTMLElement,
+                            domIndex: context.nextDomIndex.index,
                             domNode: nextParentDomNode,
                             templatesById: {},
                             domNodesById: {},
                             componentsById: {}
                         };
-                        next(patch);
-                        patchContext = {
-                            ...patchContext,
+                        context.next(patch);
+                        context = context.cloneBy({
                             parentDomNode: nextParentDomNode,
                             currentPatch: patch
-                        };
+                        });
                     }
                 }
             }
@@ -130,9 +112,9 @@ function render(
     if (typeof nextTemplate === 'object') {
         if (nextTemplate instanceof Template) {
             if (typeof nextTemplate.componentType === 'string') {
-                renderElement(nextTemplate, prevTemplate, domContext, patchContext, options, next, error);
+                renderElement(nextTemplate, prevTemplate, context, options);
             } else if (nextTemplate.componentType.prototype instanceof Component) {
-                renderComponent(nextTemplate, prevTemplate, domContext, patchContext, options, next, error);
+                renderComponent(nextTemplate, prevTemplate, context, options);
             } else if ((nextTemplate.componentType as StatelessComponent<any>).$uberComponent) {
                 // renderUber(nextTemplate, prevTemplate, context, nodesById);
             } else {
@@ -140,31 +122,18 @@ function render(
             }
         } else if (nextTemplate instanceof TemplateFragment) {
             if (Array.isArray(nextTemplate.children)) {
-                renderArray(
-                    nextTemplate.children,
-                    prevTemplate && (prevTemplate as any).children,
-                    domContext,
-                    patchContext,
-                    options,
-                    next,
-                    error,
-                    true
-                );
+                const prevChildren = prevTemplate && (prevTemplate as any).children;
+                renderArray(nextTemplate.children, prevChildren, context, options);
             } else {
-                render(
-                    nextTemplate.children,
-                    prevTemplate && (prevTemplate as any).children,
-                    domContext,
-                    patchContext,
-                    options,
-                    next,
-                    error
-                );
+                const prevChildren = prevTemplate && (prevTemplate as any).children;
+                render(nextTemplate.children, prevChildren, context, options);
             }
         } else if (Array.isArray(nextTemplate)) {
-            renderArray(nextTemplate, prevTemplate, domContext, patchContext, options, next, error);
-        } else if (nextTemplate !== null) {
-            error(new Error(
+            renderArray(nextTemplate, prevTemplate, context, options, true);
+        } else if (nextTemplate === null) {
+            renderString('', prevTemplate, context, options);
+        } else {
+            context.error(new Error(
                 'Objects are not valid as Rerender child ' +
                 `(found: object ${JSON.stringify(nextTemplate)}). ` +
                 'If you meant to render a collection of children, use an array instead.'
@@ -172,20 +141,19 @@ function render(
             return;
         }
     } else if (typeof nextTemplate === 'string') {
-        renderString(nextTemplate, prevTemplate, domContext, patchContext, options, next, error);
+        renderString(nextTemplate, prevTemplate, context, options);
     } else if (typeof nextTemplate === 'number') {
-        renderString(String(nextTemplate), prevTemplate, domContext, patchContext, options, next, error);
+        renderString(String(nextTemplate), prevTemplate, context, options);
+    } else if (isNothing(nextTemplate)) {
+        renderString('', prevTemplate, context, options);
     }
 }
 
 function renderComponent(
     nextTemplate: Template<ComponentClass>,
     prevTemplate: Renderable,
-    domContext: DOMContext,
-    patchContext: PatchContext,
-    options: RenderDOMOptions,
-    next: Next,
-    error: ErrorSignature
+    context: Context,
+    options: Options
 ) {
     const componentType = nextTemplate.componentType;
     const props = getComponentProps(
@@ -195,30 +163,37 @@ function renderComponent(
         componentType.wrapper ? intrinsicPropsWrapper : intrinsicProps
     );
 
-    switch (patchContext.currentPatch && patchContext.currentPatch.type) {
+    switch (context.currentPatch && context.currentPatch.type) {
         case 'create': {
             const instance = new componentType(props, options.dispatcher.dispatch);
-            const nextPatchContext = {
-                ...patchContext,
-                parentComponent: instance,
-                id: patchContext.id + '.0'
-            };
             if (typeof instance.componentDidCatch === 'function') {
                 const componentTemplate = instance.render();
                 const patches: Patch[] = [];
-                renderTree(componentTemplate, undefined, domContext, nextPatchContext, options)
+                renderTree(componentTemplate, undefined, context.cloneBy({
+                    id: getId(componentTemplate, context.id, 0, true),
+                    parentComponent: instance,
+                    currentPatch: undefined
+                }), options)
                     .subscribe(
                         (patch: Patch | Patch[]) => Array.isArray(patch)
                             ? patches.push(...patch)
                             : patches.push(patch),
                         (e: Error) => {
                             (instance.componentDidCatch as Function)(e);
-                            render(instance.render(), undefined, domContext, nextPatchContext, options, next, error);
+                            const template = instance.render();
+                            render(template, undefined, context.cloneBy({
+                                id: getId(template, context.id, 0, true),
+                                parentComponent: instance,
+                            }), options);
                         },
-                        () => next(patches)
+                        () => context.next(patches)
                     );
             } else {
-                render(instance.render(), undefined, domContext, nextPatchContext, options, next, error);
+                const componentTemplate = instance.render();
+                render(instance.render(), undefined, context.cloneBy({
+                    id: getId(componentTemplate, context.id, 0, true),
+                    parentComponent: instance,
+                }), options);
             }
             break;
         }
@@ -232,43 +207,23 @@ function renderComponent(
 
 }
 
-function renderElement(
-    nextTemplate: Template<string>,
-    prevTemplate: Renderable,
-    domContext: DOMContext,
-    patchContext: PatchContext,
-    options: RenderDOMOptions,
-    next: Next,
-    error: ErrorSignature
-) {
+function renderElement(nextTemplate: Template<string>, prevTemplate: Renderable, context: Context, options: Options) {
     if (!isValidTag(nextTemplate.componentType)) {
-        error(new Error(`Name of tag  "${nextTemplate.componentType}" is not valid`));
+        context.error(new Error(`Name of tag  "${nextTemplate.componentType}" is not valid`));
         return;
     }
 
-    switch (patchContext.currentPatch && patchContext.currentPatch.type) {
+    switch (context.currentPatch && context.currentPatch.type) {
         case 'create': {
             const nextDomNode = options.document.createElement(nextTemplate.componentType);
             if (nextTemplate.props) {
-                setAttrs(nextDomNode, nextTemplate.props, error);
+                setAttrs(nextDomNode, nextTemplate.props, context.error);
             }
-            patchContext.parentDomNode.appendChild(nextDomNode);
-            domContext.nextDomIndex++;
-            (patchContext.currentPatch as PatchCreate).domNodesById[patchContext.id] = nextDomNode;
+            context.parentDomNode.appendChild(nextDomNode);
+            context.incrementDom();
+            (context.currentPatch as PatchCreate).domNodesById[context.id] = nextDomNode;
             if (nextTemplate.children) {
-                renderArray(
-                    nextTemplate.children,
-                    undefined,
-                    { nextDomIndex: 0 },
-                    {
-                        ...patchContext,
-                        parentDomNode: nextDomNode,
-                    },
-                    options,
-                    next,
-                    error,
-                    true
-                );
+                renderArray(nextTemplate.children, undefined, context.addDomLevel(nextDomNode), options);
             }
             break;
         }
@@ -298,21 +253,13 @@ function setAttrs(domNode: HTMLElement, props: Map<any>, error: ErrorSignature) 
     }
 }
 
-function renderString(
-    nextTemplate: string,
-    prevTemplate: Renderable,
-    domContext: DOMContext,
-    patchContext: PatchContext,
-    options: RenderDOMOptions,
-    next: Next,
-    error: ErrorSignature
-) {
-    switch (patchContext.currentPatch && patchContext.currentPatch.type) {
+function renderString(nextTemplate: string, prevTemplate: Renderable, context: Context, options: Options) {
+    switch (context.currentPatch && context.currentPatch.type) {
         case 'create': {
             const nextDomNode = options.document.createTextNode(nextTemplate);
-            patchContext.parentDomNode.appendChild(nextDomNode);
-            domContext.nextDomIndex++;
-            (patchContext.currentPatch as PatchCreate).domNodesById[patchContext.id] = nextDomNode;
+            context.parentDomNode.appendChild(nextDomNode);
+            context.incrementDom();
+            (context.currentPatch as PatchCreate).domNodesById[context.id] = nextDomNode;
             break;
         }
 
@@ -327,12 +274,9 @@ function renderString(
 function renderArray(
     nextTemplate: Renderable[],
     prevTemplate: Renderable,
-    domContext: DOMContext,
-    patchContext: PatchContext,
-    options: RenderDOMOptions,
-    next: Next,
-    error: ErrorSignature,
-    noNeedKeys?: boolean
+    context: Context,
+    options: Options,
+    needKeys?: boolean
 ) {
     const isPrevArray = Array.isArray(prevTemplate);
 
@@ -340,14 +284,10 @@ function renderArray(
         render(
             nextTemplate[i],
             isPrevArray ? (prevTemplate as Renderable[])[i] : undefined,
-            domContext,
-            {
-                ...patchContext,
-                id: getId(nextTemplate[i], patchContext.id, i, !noNeedKeys)
-            },
-            options,
-            next,
-            error
+            context.cloneBy({
+                id: getId(nextTemplate[i], context.id, i, needKeys)
+            }),
+            options
         );
     }
 }
@@ -391,7 +331,7 @@ function isMovable(template: Renderable) {
         (enabledKeysTypes[typeof template.props.uniqid] || enabledKeysTypes[typeof template.props.uniqid]);
 }
 
-function getId(template: Renderable, parentId: string, index: number, needKey: boolean): string {
+function getId(template: Renderable, parentId: string, index: number, needKey?: boolean): string {
     if (isMovable(template)) {
         const props = (template as any).props;
         if (props.uniqid !== undefined) {
@@ -407,26 +347,3 @@ function getId(template: Renderable, parentId: string, index: number, needKey: b
         return parentId + '.' + index;
     }
 }
-
-// if (nextTemplate != null) {
-    // if (prevTemplate == null) {
-        // if (isMovable(nextTemplate) && isSameType(template, prevTemplateById)) {
-            // move
-        // } else {
-            // create
-        // }
-    // } else {
-        // if (!isSameType(template, prevTemplate)) {
-            // if (isMovable(nextTemplate) && isSameType(template, prevTemplateById)) {
-                // move and replace
-            // } else {
-                // replace
-            // }
-        // }
-    // }
-    // patch deeper here
-// } else {
-    // if (prevTemplate != null) {
-        // remove prev and meta
-    // }
-// }
