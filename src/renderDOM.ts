@@ -12,8 +12,8 @@ import {
     StatelessComponent
 } from './types';
 import { Context } from './Context';
-import { disabledAttrs, mapJsAttrs, intrinsicProps, intrinsicPropsWrapper } from './constants';
-import { applyPatches } from './applyPatches';
+import { intrinsicProps, intrinsicPropsWrapper } from './constants';
+import { applyPatch } from './applyPatches';
 import { noop } from './noop';
 import { shallowEqualProps } from './shallowEqualProps';
 import { Component } from './Component';
@@ -34,12 +34,12 @@ export function renderDOM(
     const channel = new Channel();
     const context = new Context(
         getId(template, 'r', 0, false),
-        domNode,
-        { index: 0 }
+        'r'
     );
-    const patches: Patch[] = [];
     const templatesById: Map<Template> = {};
-    const domNodesById: Map<DOMNode> = {};
+    const domNodesById: Map<DOMNode> = {
+        r: domNode
+    };
     const componentsById: Map<ComponentNode> = {};
 
     const options: Options = {
@@ -53,13 +53,15 @@ export function renderDOM(
         componentsById
     };
 
+    const patches: Patch[] = [];
+
     renderTree(template, undefined, context, options)
         .subscribe(
             (patch: Patch | Patch[]) => Array.isArray(patch)
                 ? patches.push(...patch)
                 : patches.push(patch),
             (error: Error) => { throw error; },
-            () => applyPatches(patches, options)
+            () => applyPatch(patches[0], options)
         );
 }
 
@@ -71,44 +73,6 @@ function renderTree(nextTemplate: Renderable, prevTemplate: Renderable, context:
 }
 
 function render(nextTemplate: Renderable, prevTemplate: Renderable, context: Context, options: Options) {
-    switch (context.currentPatch && context.currentPatch.type) {
-        case 'create':
-            if (!isNothing(nextTemplate) &&
-                isMovable(nextTemplate) && isSameType(nextTemplate, options.templatesById[context.id])) {
-
-                // move
-            }
-            break;
-
-        case undefined:
-            if (!isSameType(nextTemplate, prevTemplate)) {
-                // remove prev
-                if (!isNothing(nextTemplate)) {
-                    if (isMovable(nextTemplate) && isSameType(nextTemplate, options.templatesById[context.id])) {
-                        // move
-                    } else {
-                        const nextParentDomNode = options.document.createDocumentFragment();
-
-                        const patch: Patch = {
-                            type: 'create',
-                            parentDomNode: context.parentDomNode as HTMLElement,
-                            domIndex: context.nextDomIndex.index,
-                            domNode: nextParentDomNode,
-                            templatesById: {},
-                            domNodesById: {},
-                            componentsById: {}
-                        };
-                        context.next(patch);
-                        context = context.cloneBy({
-                            parentDomNode: nextParentDomNode,
-                            currentPatch: patch
-                        });
-                    }
-                }
-            }
-            break;
-    }
-
     if (typeof nextTemplate === 'object') {
         if (nextTemplate instanceof Template) {
             if (typeof nextTemplate.componentType === 'string') {
@@ -163,45 +127,32 @@ function renderComponent(
         componentType.wrapper ? intrinsicPropsWrapper : intrinsicProps
     );
 
-    switch (context.currentPatch && context.currentPatch.type) {
-        case 'create': {
+    if (isSame(nextTemplate, prevTemplate)) {
+        // update
+    } else {
+        if (isMovable(nextTemplate) && options.templatesById[context.id] &&
+            isSame(nextTemplate, options.templatesById[context.id])) {
+            // move and update
+        } else {
             const instance = new componentType(props, options.dispatcher.dispatch);
-            if (typeof instance.componentDidCatch === 'function') {
-                const componentTemplate = instance.render();
-                const patches: Patch[] = [];
-                renderTree(componentTemplate, undefined, context.cloneBy({
-                    id: getId(componentTemplate, context.id, 0, true),
-                    parentComponent: instance,
-                    currentPatch: undefined
-                }), options)
-                    .subscribe(
-                        (patch: Patch | Patch[]) => Array.isArray(patch)
-                            ? patches.push(...patch)
-                            : patches.push(patch),
-                        (e: Error) => {
-                            (instance.componentDidCatch as Function)(e);
-                            const template = instance.render();
-                            render(template, undefined, context.cloneBy({
-                                id: getId(template, context.id, 0, true),
-                                parentComponent: instance,
-                            }), options);
-                        },
-                        () => context.next(patches)
-                    );
-            } else {
-                const componentTemplate = instance.render();
-                render(instance.render(), undefined, context.cloneBy({
-                    id: getId(componentTemplate, context.id, 0, true),
-                    parentComponent: instance,
-                }), options);
+            const componentTemplate = instance.render();
+            let replacedDomNodeId!: string;
+            if (prevTemplate !== undefined || options.domNodesById[context.id]) {
+                // TODO: replace patches
+                replacedDomNodeId = '';
             }
-            break;
-        }
-        case 'move': {
-            break;
-        }
-        case undefined: {
-            break;
+            const patch: PatchCreate = {
+                type: 'create',
+                id: context.id,
+                parentDomNodeId: context.parentDomNodeId,
+                replacedDomNodeId,
+                childrenPatches: []
+            };
+            render(instance.render(), undefined, context.cloneBy({
+                id: getId(componentTemplate, context.id, 0, true),
+                parentComponent: instance,
+                insideCreation: true
+            }), options);
         }
     }
 
@@ -213,62 +164,49 @@ function renderElement(nextTemplate: Template<string>, prevTemplate: Renderable,
         return;
     }
 
-    switch (context.currentPatch && context.currentPatch.type) {
-        case 'create': {
-            const nextDomNode = options.document.createElement(nextTemplate.componentType);
-            if (nextTemplate.props) {
-                setAttrs(nextDomNode, nextTemplate.props, context.error);
+    if (isSame(nextTemplate, prevTemplate)) {
+        // update
+    } else {
+        if (isMovable(nextTemplate) && options.templatesById[context.id] &&
+            isSame(nextTemplate, options.templatesById[context.id])) {
+            // move and update
+        } else {
+            const patch: PatchCreate = {
+                type: 'create',
+                id: context.id,
+                parentDomNodeId: context.parentDomNodeId,
+                template: nextTemplate,
+                childrenPatches: [],
+                parentPatch: context.parentPatch
+            };
+            if (context.parentPatch) {
+                context.parentPatch.childrenPatches.push(patch);
             }
-            context.parentDomNode.appendChild(nextDomNode);
-            context.incrementDom();
-            (context.currentPatch as PatchCreate).domNodesById[context.id] = nextDomNode;
+            context.next(patch);
             if (nextTemplate.children) {
-                renderArray(nextTemplate.children, undefined, context.addDomLevel(nextDomNode), options);
-            }
-            break;
-        }
-
-        case 'move':
-            // TODO move
-        case undefined:
-            // TODO update
-            break;
-    }
-}
-
-function setAttrs(domNode: HTMLElement, props: Map<any>, error: ErrorSignature) {
-    for (const name in props) {
-        if (!disabledAttrs[name]) {
-            if (!isValidAttr(name)) {
-                error(new Error(`attribute "${name}" is not valid`));
-                return;
-            }
-            const jsName = mapJsAttrs[name];
-            if (jsName) {
-                (domNode as any)[jsName] = props[name];
-            } else {
-                domNode.setAttribute(name, props[name]);
+                renderArray(nextTemplate.children, undefined, context.cloneBy({
+                    parentDomNodeId: context.id,
+                    parentPatch: patch,
+                    insideCreation: true
+                }), options);
             }
         }
     }
 }
 
 function renderString(nextTemplate: string, prevTemplate: Renderable, context: Context, options: Options) {
-    switch (context.currentPatch && context.currentPatch.type) {
-        case 'create': {
-            const nextDomNode = options.document.createTextNode(nextTemplate);
-            context.parentDomNode.appendChild(nextDomNode);
-            context.incrementDom();
-            (context.currentPatch as PatchCreate).domNodesById[context.id] = nextDomNode;
-            break;
-        }
-
-        case 'move':
-            // TODO move
-        case undefined:
-            // TODO update
-            break;
+    const patch: PatchCreate = {
+        type: 'create',
+        id: context.id,
+        parentDomNodeId: context.parentDomNodeId,
+        template: nextTemplate,
+        childrenPatches: [],
+        parentPatch: context.parentPatch
+    };
+    if (context.parentPatch) {
+        context.parentPatch.childrenPatches.push(patch);
     }
+    context.next(patch);
 }
 
 function renderArray(
@@ -302,7 +240,7 @@ function isNothing(template: Renderable) {
     return template === null || noRenderTypes[typeof template];
 }
 
-function isSameType(template1: Renderable, template2: Renderable) {
+function isSame(template1: Renderable, template2: Renderable) {
     const type1 = typeof template1;
     const type2 = typeof template2;
 
@@ -310,7 +248,12 @@ function isSameType(template1: Renderable, template2: Renderable) {
         return true;
     } else if (type1 === 'object' && type2 === 'object') {
         if (template1 instanceof Template) {
-            return template2 instanceof Template && template1.componentType === template2.componentType;
+            return template2 instanceof Template && template1.componentType === template2.componentType && (
+                (!template1.props && !template2.props) || (
+                    (template1.props as any).key === (template2.props as any).key &&
+                    (template2.props as any).uniqid === (template2.props as any).uniqid
+                )
+            );
         } else if (Array.isArray(template1)) {
             return Array.isArray(template2);
         } else if (template1 instanceof TemplateFragment) {
@@ -326,13 +269,13 @@ const enabledKeysTypes: Map<boolean> = {
     number: true
 };
 
-function isMovable(template: Renderable) {
-    return template instanceof Template &&  template.props != null &&
+function isMovable(template: Template) {
+    return template.props != null &&
         (enabledKeysTypes[typeof template.props.uniqid] || enabledKeysTypes[typeof template.props.uniqid]);
 }
 
 function getId(template: Renderable, parentId: string, index: number, needKey?: boolean): string {
-    if (isMovable(template)) {
+    if (template instanceof Template && isMovable(template)) {
         const props = (template as any).props;
         if (props.uniqid !== undefined) {
             return 'u' + props.uniqid;
@@ -347,3 +290,42 @@ function getId(template: Renderable, parentId: string, index: number, needKey?: 
         return parentId + '.' + index;
     }
 }
+
+// switch (context.currentPatch && context.currentPatch.type) {
+//     case 'create':
+//         if (!isNothing(nextTemplate) &&
+//             isMovable(nextTemplate) && isSameType(nextTemplate, options.templatesById[context.id])) {
+//
+//             // move
+//         }
+//         break;
+//
+//     case undefined:
+//         if (!isSameType(nextTemplate, prevTemplate)) {
+//             // remove prev
+//             if (!isNothing(nextTemplate)) {
+//                 if (isMovable(nextTemplate) && isSameType(nextTemplate, options.templatesById[context.id])) {
+//                     // move
+//                 } else {
+//                     const nextParentDomNode = options.document.createDocumentFragment();
+//
+//                     const patch: Patch = {
+//                         type: 'create',
+//                         parentDomNode: context.parentDomNode as HTMLElement,
+//                         domIndex: context.nextDomIndex.index,
+//                         domNode: nextParentDomNode,
+//                         templatesById: {},
+//                         domNodesById: {},
+//                         componentsById: {}
+//                     };
+//                     context.next(patch);
+//                     context = context.cloneBy({
+//                         parentDomNode: nextParentDomNode,
+//                         currentPatch: patch
+//                     });
+//                 }
+//             }
+//         }
+//         break;
+// }
+//

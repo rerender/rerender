@@ -92,9 +92,7 @@ export type DOMNode = HTMLElement | Document | Text;
 
 export type ComponentNode = {
     props: any,
-    tree: Renderable,
-    parentDomNode: DOMNode, // may help for replace and move if component return many root domNodes
-    nextDomIndex: number, // for same purposes as previous
+    render: Renderable,
     instance?: Component<any>,
     state?: any,
     parentComponent?: Component<any>
@@ -115,39 +113,45 @@ export type Patch = PatchCreate | PatchMove | PatchRemove | PatchUpdate;
 
 export type PatchCreate = {
     type: 'create',
-    parentDomNode: DOMNode,
-    hydrate?: boolean,
-    domIndex: number,
-    domNode: HTMLElement | DocumentFragment,
-    templatesById: Map<Template>,
-    domNodesById: Map<DOMNode>,
-    componentsById: Map<ComponentNode>
+    id: string,
+    parentDomNodeId: string,
+    componentNode?: ComponentNode,
+    isDocumentFragment?: boolean,
+    template?: Renderable,
+    replacedDomNodeId?: string,
+    childrenPatches: Patch[],
+    parentPatch?: Patch
 };
 
 export type PatchMove = {
     type: 'move',
-    parentDomNode: DOMNode,
-    domIndex: number,
-    domNodes: [HTMLElement],
-    templatesById: Map<Template>,
-    domNodesById: Map<DOMNode>,
-    componentsById: Map<ComponentNode>
+    id: string,
+    domNodes?: DOMNode[],
+    parentDomNodeId: string,
+    componentNode?: ComponentNode,
+    template: Renderable,
+    setProps?: Map<any>,
+    removeProps?: Map<boolean>,
+    replacedId?: string,
+    childrenPatches: Patch[],
+    parentPatch?: Patch
 };
 
 export type PatchRemove = {
     type: 'remove',
-    domNodes: [HTMLElement]
-    removedNodes: Map<boolean>,
-    templateForRemove: Renderable
+    id: string,
+    template?: Renderable,
+    childrenPatches: Patch[],
+    parentPatch?: Patch
 };
 
 export type PatchUpdate = {
     type: 'update',
-    domNode: HTMLElement,
-    setProps: Map<any>,
-    removeProps: Map<true>,
-    templatesById: Map<Template>,
-    domNodesById: Map<DOMNode>
+    id: string,
+    setProps?: Map<any>,
+    removeProps?: Map<boolean>,
+    childrenPatches: Patch[],
+    parentPatch?: Patch
 };
 
 declare global {
