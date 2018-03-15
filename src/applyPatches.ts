@@ -1,35 +1,35 @@
-import { Map, Patch, RenderDOMOptions } from './types';
+import { Map, Patch, PatchCreate, RenderDOMOptions } from './types';
 import { Template } from './Template';
 import { isValidAttr } from './validate';
 import { disabledAttrs, mapJsAttrs } from './constants';
 
-export function applyPatches(patches: Patch[], options: RenderDOMOptions) {
+export function applyPatches(patches: Patch[], options: RenderDOMOptions, parentDomNode?: HTMLElement) {
     for (let i = 0, l = patches.length; i < l; i++) {
-        applyPatch(patches[i], options);
+        switch (patches[i].type) {
+            case 'create':
+                applyCreate(patches[i] as PatchCreate, options, parentDomNode);
+                break;
+        }
     }
 }
 
-export function applyPatch(patch: Patch, options: RenderDOMOptions) {
-    switch (patch.type) {
-        case 'create':
-            if (patch.template instanceof Template) {
-                if (typeof patch.template.componentType === 'string') {
-                    const domNode = options.document.createElement(patch.template.componentType);
-                    if (patch.template.props) {
-                        setAttrs(domNode, patch.template.props);
-                    }
-                    options.domNodesById[patch.id] = domNode;
-                    if (patch.childrenPatches.length) {
-                        applyPatches(patch.childrenPatches, options);
-                    }
-                    options.domNodesById[patch.parentDomNodeId].appendChild(domNode);
-                }
-            } else if (typeof patch.template === 'string') {
-                const domNode = options.document.createTextNode(patch.template);
-                options.domNodesById[patch.id] = domNode;
-                options.domNodesById[patch.parentDomNodeId].appendChild(domNode);
+export function applyCreate(patch: PatchCreate, options: RenderDOMOptions, parentDomNode?: HTMLElement) {
+    if (patch.template instanceof Template) {
+        if (typeof patch.template.componentType === 'string') {
+            const domNode = options.document.createElement(patch.template.componentType);
+            if (patch.template.props) {
+                setAttrs(domNode, patch.template.props);
             }
-            break;
+            options.domNodesById[patch.id] = domNode;
+            if (patch.childrenPatches.length) {
+                applyPatches(patch.childrenPatches, options);
+            }
+            options.domNodesById[patch.parentDomNodeId].appendChild(domNode);
+        }
+    } else if (typeof patch.template === 'string') {
+        const domNode = options.document.createTextNode(patch.template);
+        options.domNodesById[patch.id] = domNode;
+        options.domNodesById[patch.parentDomNodeId].appendChild(domNode);
     }
 }
 

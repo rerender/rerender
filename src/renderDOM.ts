@@ -13,7 +13,7 @@ import {
 } from './types';
 import { Context } from './Context';
 import { intrinsicProps, intrinsicPropsWrapper } from './constants';
-import { applyPatch } from './applyPatches';
+import { applyPatches } from './applyPatches';
 import { noop } from './noop';
 import { shallowEqualProps } from './shallowEqualProps';
 import { Component } from './Component';
@@ -61,7 +61,7 @@ export function renderDOM(
                 ? patches.push(...patch)
                 : patches.push(patch),
             (error: Error) => { throw error; },
-            () => applyPatch(patches[0], options)
+            () => applyPatches([patches[0]], options)
         );
 }
 
