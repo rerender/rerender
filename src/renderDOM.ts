@@ -61,7 +61,7 @@ export function renderDOM(
                 ? patches.push(...patch)
                 : patches.push(patch),
             (error: Error) => { throw error; },
-            () => applyPatches([patches[0]], options)
+            () => applyPatches(patches, options)
         );
 }
 
@@ -136,26 +136,28 @@ function renderComponent(
         } else {
             const instance = new componentType(props, options.dispatcher.dispatch);
             const componentTemplate = instance.render();
-            let replacedDomNodeId!: string;
-            if (prevTemplate !== undefined || options.domNodesById[context.id]) {
-                // TODO: replace patches
-                replacedDomNodeId = '';
-            }
             const patch: PatchCreate = {
                 type: 'create',
                 id: context.id,
                 parentDomNodeId: context.parentDomNodeId,
-                replacedDomNodeId,
-                childrenPatches: []
+                componentNode: {
+                    props,
+                    render: componentTemplate,
+                    instance,
+                    state: instance.$getState(),
+                    parentComponent: context.parentComponent
+                },
+                childrenPatches: [],
+                parentPatch: context.parentPatch
             };
-            render(instance.render(), undefined, context.cloneBy({
+            commitPatch(patch, context);
+            render(componentTemplate, undefined, context.cloneBy({
                 id: getId(componentTemplate, context.id, 0, true),
                 parentComponent: instance,
                 insideCreation: true
             }), options);
         }
     }
-
 }
 
 function renderElement(nextTemplate: Template<string>, prevTemplate: Renderable, context: Context, options: Options) {
@@ -179,10 +181,7 @@ function renderElement(nextTemplate: Template<string>, prevTemplate: Renderable,
                 childrenPatches: [],
                 parentPatch: context.parentPatch
             };
-            if (context.parentPatch) {
-                context.parentPatch.childrenPatches.push(patch);
-            }
-            context.next(patch);
+            commitPatch(patch, context);
             if (nextTemplate.children) {
                 renderArray(nextTemplate.children, undefined, context.cloneBy({
                     parentDomNodeId: context.id,
@@ -203,10 +202,7 @@ function renderString(nextTemplate: string, prevTemplate: Renderable, context: C
         childrenPatches: [],
         parentPatch: context.parentPatch
     };
-    if (context.parentPatch) {
-        context.parentPatch.childrenPatches.push(patch);
-    }
-    context.next(patch);
+    commitPatch(patch, context);
 }
 
 function renderArray(
@@ -227,6 +223,14 @@ function renderArray(
             }),
             options
         );
+    }
+}
+
+function commitPatch(patch: Patch, context: Context) {
+    if (context.parentPatch) {
+        context.parentPatch.childrenPatches.push(patch);
+    } else {
+        context.next(patch);
     }
 }
 

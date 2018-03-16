@@ -1,9 +1,9 @@
-import { Map, Patch, PatchCreate, RenderDOMOptions } from './types';
+import { Map, Patch, DOMNode, PatchCreate, RenderDOMOptions } from './types';
 import { Template } from './Template';
 import { isValidAttr } from './validate';
 import { disabledAttrs, mapJsAttrs } from './constants';
 
-export function applyPatches(patches: Patch[], options: RenderDOMOptions, parentDomNode?: HTMLElement) {
+export function applyPatches(patches: Patch[], options: RenderDOMOptions, parentDomNode?: DOMNode) {
     for (let i = 0, l = patches.length; i < l; i++) {
         switch (patches[i].type) {
             case 'create':
@@ -13,7 +13,11 @@ export function applyPatches(patches: Patch[], options: RenderDOMOptions, parent
     }
 }
 
-export function applyCreate(patch: PatchCreate, options: RenderDOMOptions, parentDomNode?: HTMLElement) {
+export function applyCreate(
+    patch: PatchCreate,
+    options: RenderDOMOptions,
+    parentDomNode: DOMNode = options.domNodesById[patch.parentDomNodeId]
+) {
     if (patch.template instanceof Template) {
         if (typeof patch.template.componentType === 'string') {
             const domNode = options.document.createElement(patch.template.componentType);
@@ -24,12 +28,12 @@ export function applyCreate(patch: PatchCreate, options: RenderDOMOptions, paren
             if (patch.childrenPatches.length) {
                 applyPatches(patch.childrenPatches, options);
             }
-            options.domNodesById[patch.parentDomNodeId].appendChild(domNode);
+            parentDomNode.appendChild(domNode);
         }
     } else if (typeof patch.template === 'string') {
         const domNode = options.document.createTextNode(patch.template);
         options.domNodesById[patch.id] = domNode;
-        options.domNodesById[patch.parentDomNodeId].appendChild(domNode);
+        parentDomNode.appendChild(domNode);
     }
 }
 
