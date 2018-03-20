@@ -57,12 +57,26 @@ export function renderDOM(
 
     renderTree(template, undefined, context, options)
         .subscribe(
-            (patch: Patch | Patch[]) => Array.isArray(patch)
-                ? patches.push(...patch)
-                : patches.push(patch),
+            (patch: Patch | Patch[]) => {
+                if (Array.isArray(patch)) {
+                    for (let i = 0, l = patch.length; i < l; i++) {
+                        commitPatch(patch[i], patches);
+                    }
+                } else {
+                    commitPatch(patch, patches);
+                }
+            },
             (error: Error) => { throw error; },
             () => applyPatches(patches, options)
         );
+}
+
+function commitPatch(patch: Patch, patches: Patch[]) {
+    if (patch.parentPatch) {
+        patch.parentPatch.childrenPatches.push(patch);
+    } else {
+        patches.push(patch);
+    }
 }
 
 function renderTree(nextTemplate: Renderable, prevTemplate: Renderable, context: Context, options: Options) {
@@ -150,7 +164,7 @@ function renderComponent(
                 childrenPatches: [],
                 parentPatch: context.parentPatch
             };
-            commitPatch(patch, context);
+            context.next(patch);
             render(componentTemplate, undefined, context.cloneBy({
                 id: getId(componentTemplate, context.id, 0, true),
                 parentComponent: instance,
@@ -181,7 +195,7 @@ function renderElement(nextTemplate: Template<string>, prevTemplate: Renderable,
                 childrenPatches: [],
                 parentPatch: context.parentPatch
             };
-            commitPatch(patch, context);
+            context.next(patch);
             if (nextTemplate.children) {
                 renderArray(nextTemplate.children, undefined, context.cloneBy({
                     parentDomNodeId: context.id,
@@ -202,7 +216,7 @@ function renderString(nextTemplate: string, prevTemplate: Renderable, context: C
         childrenPatches: [],
         parentPatch: context.parentPatch
     };
-    commitPatch(patch, context);
+    context.next(patch);
 }
 
 function renderArray(
@@ -223,14 +237,6 @@ function renderArray(
             }),
             options
         );
-    }
-}
-
-function commitPatch(patch: Patch, context: Context) {
-    if (context.parentPatch) {
-        context.parentPatch.childrenPatches.push(patch);
-    } else {
-        context.next(patch);
     }
 }
 
