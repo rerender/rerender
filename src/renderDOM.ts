@@ -164,12 +164,29 @@ function renderComponent(
                 childrenPatches: [],
                 parentPatch: context.parentPatch
             };
-            context.next(patch);
-            render(componentTemplate, undefined, context.cloneBy({
+            const nextContext = context.cloneBy({
                 id: getId(componentTemplate, context.id, 0, true),
                 parentComponent: instance,
-                insideCreation: true
-            }), options);
+                insideCreation: true,
+                parentPatch: patch
+            });
+            context.next(patch);
+            if (typeof instance.componentDidCatch === 'function') {
+                const patches: Patch[] = [];
+                renderTree(componentTemplate, undefined, nextContext, options)
+                    .subscribe(
+                        (patchInner: Patch | Patch[]) => Array.isArray(patchInner)
+                            ? patches.push(...patchInner)
+                            : patches.push(patchInner),
+                        (e: Error) => {
+                            (instance.componentDidCatch as Function)(e);
+                            render(instance.render(), undefined, nextContext, options);
+                        },
+                        () => context.next(patches)
+                    );
+            } else {
+                render(componentTemplate, undefined, nextContext, options);
+            }
         }
     }
 }
