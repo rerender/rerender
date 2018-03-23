@@ -1,4 +1,5 @@
 import { Map, Patch, DOMNode, PatchCreate, RenderDOMOptions } from './types';
+import { Component } from './Component';
 import { Template } from './Template';
 import { isValidAttr } from './validate';
 import { disabledAttrs, mapJsAttrs } from './constants';
@@ -19,7 +20,11 @@ export function applyCreate(
     parentDomNode: DOMNode = options.domNodesById[patch.parentDomNodeId]
 ) {
     if (patch.template instanceof Template) {
-        if (typeof patch.template.componentType === 'string') {
+        if (patch.template.componentType.prototype instanceof Component) {
+            if (patch.childrenPatches.length) {
+                applyPatches(patch.childrenPatches, options);
+            }
+        } else if (typeof patch.template.componentType === 'string') {
             const domNode = options.document.createElement(patch.template.componentType);
             if (patch.template.props) {
                 setAttrs(domNode, patch.template.props);

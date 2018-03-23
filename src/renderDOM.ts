@@ -153,6 +153,7 @@ function renderComponent(
             const patch: PatchCreate = {
                 type: 'create',
                 id: context.id,
+                template: nextTemplate,
                 parentDomNodeId: context.parentDomNodeId,
                 componentNode: {
                     props,
