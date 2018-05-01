@@ -34,6 +34,10 @@ export function applyCreate(
                 applyPatches(patch.childrenPatches, options);
             }
             parentDomNode.appendChild(domNode);
+        } else if (typeof patch.template.componentType === 'function') {
+            if (patch.childrenPatches.length) {
+                applyPatches(patch.childrenPatches, options);
+            }
         }
     } else if (typeof patch.template === 'string') {
         const domNode = options.document.createTextNode(patch.template);

@@ -96,7 +96,7 @@ function render(nextTemplate: Renderable, prevTemplate: Renderable, context: Con
             } else if ((nextTemplate.componentType as StatelessComponent<any>).$uberComponent) {
                 // renderUber(nextTemplate, prevTemplate, context, nodesById);
             } else {
-                // renderStateless(nextTemplate, prevTemplate, context, nodesById);
+                renderStateless(nextTemplate, prevTemplate, context, options);
             }
         } else if (nextTemplate instanceof TemplateFragment) {
             if (Array.isArray(nextTemplate.children)) {
@@ -190,6 +190,35 @@ function renderComponent(
             }
         }
     }
+}
+
+function renderStateless(
+    nextTemplate: Template<StatelessComponent<any>>,
+    prevTemplate: Renderable,
+    context: Context,
+    options: Options
+) {
+    const props = getComponentProps(nextTemplate.props, nextTemplate.children);
+    const componentTemplate = nextTemplate.componentType(props);
+    const patch: PatchCreate = {
+        type: 'create',
+        id: context.id,
+        template: nextTemplate,
+        parentDomNodeId: context.parentDomNodeId,
+        componentNode: {
+            props,
+            render: componentTemplate
+        },
+        childrenPatches: [],
+        parentPatch: context.parentPatch
+    };
+    const nextContext = context.cloneBy({
+        id: getId(componentTemplate, context.id, 0, true),
+        insideCreation: true,
+        parentPatch: patch
+    });
+    context.next(patch);
+    render(componentTemplate, undefined, nextContext, options);
 }
 
 function renderElement(nextTemplate: Template<string>, prevTemplate: Renderable, context: Context, options: Options) {

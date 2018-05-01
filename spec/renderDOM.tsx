@@ -50,6 +50,26 @@ describe('renderDOM', () => {
             expect(input.value).toBe('some value');
             expect(input.checked).toBe(true);
         });
+
+        it('should render stateless component', () => {
+            type Props = {
+                id: string
+            };
+
+            const Block: StatelessComponent<Props> = ({ children, id }) => {
+                return <div class='block' id={id}>
+                    <input checked value={'some value'} />
+                    {children}
+                </div>;
+            };
+
+            renderDOM(<Block id='id1'>some text</Block>, renderDOMConfig);
+            const input: any = window.document.querySelector('input');
+            expect(window.document.body.innerHTML)
+                .toBe('<div class="block" id="id1"><input>some text</div>');
+            expect(input.value).toBe('some value');
+            expect(input.checked).toBe(true);
+        });
     });
 //
 //     describe('update', () => {
