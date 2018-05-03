@@ -14,6 +14,7 @@ import {
 import { Context } from './Context';
 import { intrinsicProps, intrinsicPropsWrapper } from './constants';
 import { applyPatches } from './applyPatches';
+import { Flush, Doctype } from './uberComponents';
 import { noop } from './noop';
 import { shallowEqualProps } from './shallowEqualProps';
 import { Component } from './Component';
@@ -94,7 +95,7 @@ function render(nextTemplate: Renderable, prevTemplate: Renderable, context: Con
             } else if (nextTemplate.componentType.prototype instanceof Component) {
                 renderComponent(nextTemplate, prevTemplate, context, options);
             } else if ((nextTemplate.componentType as StatelessComponent<any>).$uberComponent) {
-                // renderUber(nextTemplate, prevTemplate, context, nodesById);
+                renderUber(nextTemplate, prevTemplate, context, options);
             } else {
                 renderStateless(nextTemplate, prevTemplate, context, options);
             }
@@ -189,6 +190,16 @@ function renderComponent(
                 render(componentTemplate, undefined, nextContext, options);
             }
         }
+    }
+}
+
+// TODO
+function renderUber(nextTemplate: Template, prevTemplate: Renderable, context: Context, options: Options) {
+    switch (nextTemplate.componentType) {
+        case Flush:
+            break;
+        case Doctype:
+            break;
     }
 }
 

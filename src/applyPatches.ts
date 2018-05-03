@@ -20,11 +20,7 @@ export function applyCreate(
     parentDomNode: DOMNode = options.domNodesById[patch.parentDomNodeId]
 ) {
     if (patch.template instanceof Template) {
-        if (patch.template.componentType.prototype instanceof Component) {
-            if (patch.childrenPatches.length) {
-                applyPatches(patch.childrenPatches, options);
-            }
-        } else if (typeof patch.template.componentType === 'string') {
+        if (typeof patch.template.componentType === 'string') {
             const domNode = options.document.createElement(patch.template.componentType);
             if (patch.template.props) {
                 setAttrs(domNode, patch.template.props);
@@ -34,6 +30,10 @@ export function applyCreate(
                 applyPatches(patch.childrenPatches, options);
             }
             parentDomNode.appendChild(domNode);
+        } else if (patch.template.componentType.prototype instanceof Component) {
+            if (patch.childrenPatches.length) {
+                applyPatches(patch.childrenPatches, options);
+            }
         } else if (typeof patch.template.componentType === 'function') {
             if (patch.childrenPatches.length) {
                 applyPatches(patch.childrenPatches, options);
