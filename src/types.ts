@@ -80,7 +80,7 @@ export type RenderServerConfig = {
 
 export type RenderDOMConfig = {
     domNode?: HTMLElement,
-    window?: Window
+    win?: Window
 };
 
 // FIXME: Promise<any> not always Promise actually

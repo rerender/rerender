@@ -30,7 +30,7 @@ type ErrorSignature = (error: Error) => any;
 
 export function renderDOM(
     template: Renderable,
-    { window, domNode = window.document }: RenderDOMConfig = {}
+    { win = window, domNode = win.document }: RenderDOMConfig = {}
 ) {
     const channel = new Channel();
     const context = new Context(
@@ -48,7 +48,7 @@ export function renderDOM(
         dispatcher: {
             dispatch: noop
         },
-        document: window.document,
+        document: win.document,
         templatesById,
         domNodesById,
         componentsById

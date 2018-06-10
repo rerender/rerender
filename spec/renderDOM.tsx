@@ -11,7 +11,7 @@ describe('renderDOM', () => {
     beforeEach(() => {
         window = (new JSDOM()).window;
         renderDOMConfig = {
-            window,
+            win: window,
             domNode: window.document.body
         };
     });
