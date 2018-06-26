@@ -193,7 +193,7 @@ function renderComponent(
     }
 }
 
-// TODO
+// TODO: renderUber
 function renderUber(nextTemplate: Template, prevTemplate: Renderable, context: Context, options: Options) {
     switch (nextTemplate.componentType) {
         case Flush:
